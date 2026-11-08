@@ -128,6 +128,44 @@ h2 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -0.02em; line-height: 1.
 }
 #reassemble:hover { background: var(--accent); }
 
+/* Som */
+.top-right { display: flex; align-items: center; gap: 18px; }
+#sound {
+  pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 9px; padding: 7px 12px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); color: var(--muted);
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; transition: border-color 0.2s, color 0.2s;
+}
+#sound:hover, #sound.on { color: var(--fg); border-color: rgba(255, 255, 255, 0.3); }
+.bars { display: flex; gap: 2px; align-items: flex-end; height: 11px; }
+.bars b { width: 2px; height: 3px; background: currentColor; border-radius: 1px; transition: height 0.2s; }
+#sound.on .bars b { animation: eq 0.9s ease-in-out infinite; }
+#sound.on .bars b:nth-child(2) { animation-delay: -0.3s; }
+#sound.on .bars b:nth-child(3) { animation-delay: -0.6s; }
+#sound.on .bars b:nth-child(4) { animation-delay: -0.15s; }
+@keyframes eq { 0%, 100% { height: 3px; } 50% { height: 11px; } }
+
+#ignite {
+  margin-top: 26px; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; padding: 13px 22px 13px 16px;
+  border-radius: 999px; border: 1px solid rgba(255, 59, 48, 0.6); background: rgba(255, 59, 48, 0.1); color: var(--fg);
+  font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; transition: background 0.2s, box-shadow 0.3s;
+}
+#ignite:hover { background: rgba(255, 59, 48, 0.25); }
+#ignite .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--accent); position: relative; }
+#ignite .dot::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: var(--accent); opacity: 0.35; transition: opacity 0.3s; }
+#ignite.lit { box-shadow: 0 0 30px rgba(255, 59, 48, 0.35); }
+#ignite.lit .dot::after { opacity: 1; box-shadow: 0 0 12px var(--accent); }
+
+#tip .info { font: 400 11px 'JetBrains Mono', monospace; color: var(--muted); letter-spacing: 0.02em; max-width: 280px; white-space: normal; }
+#tip .info:empty { display: none; }
+
+.inventory { list-style: none; padding: 0; margin: 16px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.inventory li {
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+  padding: 4px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line);
+}
+.inventory b { color: var(--fg); margin-right: 5px; font-weight: 500; }
+.final .card { max-width: 420px; }
+
 .credits {
   position: relative; z-index: 6; padding: 18px clamp(20px, 4vw, 48px) 22px; text-align: center;
   font-size: 10px; letter-spacing: 0.06em; line-height: 1.7; color: #5d6574;
@@ -141,4 +179,6 @@ h2 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -0.02em; line-height: 1.
   #rail { display: none; }
   .hud .hint { display: none; }
   .meta #stage-name { display: none; }
+  #sound span { display: none; }
+  .top-right { gap: 10px; }
 }

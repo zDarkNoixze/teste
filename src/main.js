@@ -5,7 +5,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { computeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
-import { loadCar, applyExplode, createMaterials, SECTIONS, S, clamp01, easeInOut } from './car.js';
+import { loadCar, applyExplode, createMaterials, SECTIONS, S, clamp01, easeInOut } from './car/index.js';
+import { CarAudio } from './audio.js';
 import './style.css';
 
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
@@ -121,9 +122,18 @@ scene.environmentIntensity = 0.55;
 scene.environmentRotation.y = Math.PI * 0.6;
 hdr.dispose();
 scene.add(car.group);
+
 $('#total-parts').textContent = car.parts.length;
 $('#final-count').textContent = car.parts.length;
 $('#hero-count').textContent = car.parts.length;
+
+/* Inventory by category for the final chapter. */
+const cats = new Map();
+for (const p of car.parts) cats.set(p.userData.cat, (cats.get(p.userData.cat) || 0) + 1);
+$('#inventory').innerHTML = [...cats]
+  .sort((a, b) => b[1] - a[1])
+  .map(([c, n]) => `<li><b>${n}</b>${c}</li>`)
+  .join('');
 
 /* ---------------- Pós-processamento ---------------- */
 const composer = new EffectComposer(renderer);
@@ -142,7 +152,8 @@ const KEYS = [
   [[6.6, 2.6, -6.2], [1.0, 0.7, -0.4], -3.5],
   [[-3.8, 4.0, 5.0], [0, 1.0, 1.0], 4],
   [[4.6, 3.9, -3.8], [0, 1.3, -0.2], -4],
-  [[10.5, 6.8, -9.5], [0, 1.2, 0], 4],
+  [[-5.8, 5.0, -5.6], [0, 1.4, -0.4], 4],
+  [[11.5, 7.4, -10.5], [0, 1.3, 0], -2],
 ].map(([p, t, f]) => {
   const tgt = new THREE.Vector3(...t);
   return { tgt, sph: new THREE.Spherical().setFromVector3(new THREE.Vector3(...p).sub(tgt)), film: f };
@@ -269,9 +280,38 @@ function setHover(part) {
     });
     tip.querySelector('.cat').textContent = part.userData.cat;
     tip.querySelector('strong').textContent = part.userData.label;
+    tip.querySelector('.info').textContent = part.userData.info || '';
+    audio.hover();
   }
   tip.classList.toggle('show', !!part);
   document.body.style.cursor = part ? 'crosshair' : '';
+}
+
+/* ---------------- Som ---------------- */
+const audio = new CarAudio();
+if (import.meta.env.DEV) Object.assign(window, { __car: car, __audio: audio });
+const soundBtn = $('#sound');
+const igniteBtn = $('#ignite');
+function syncSound() {
+  soundBtn.classList.toggle('on', audio.enabled);
+  soundBtn.setAttribute('aria-pressed', String(audio.enabled));
+  soundBtn.querySelector('span').textContent = audio.enabled ? 'Som ligado' : 'Som desligado';
+}
+soundBtn.addEventListener('click', async () => {
+  if (audio.enabled) audio.disable();
+  else await audio.enable();
+  syncSound();
+});
+igniteBtn.addEventListener('click', async () => {
+  if (!audio.enabled) await audio.enable();
+  audio.ignite();
+  igniteBtn.classList.add('lit');
+  syncSound();
+});
+const ndc = new THREE.Vector3();
+function onPartCross(part, dir) {
+  ndc.setFromMatrixPosition(part.matrixWorld).project(camera);
+  audio.part(part.userData.cat, ndc.x, dir);
 }
 
 /* ---------------- Loop ---------------- */
@@ -307,12 +347,15 @@ function tick(now) {
   const velocity = (progress - lastProgress) / Math.max(dt, 1e-4);
   lastProgress = progress;
 
-  const loose = applyExplode(car.parts, progress);
+  const loose = applyExplode(car.parts, progress, audio.enabled ? onPartCross : null);
   car.ao.visible = progress < AO_OFF;
+  // The engine falls silent while it is being taken apart.
+  const alive = 1 - THREE.MathUtils.smoothstep(progress, S(5)[0], S(5, 0.45)[1]);
+  audio.update(dt, velocity, alive);
 
   // Hero: turntable suave; final: leve órbita contemplativa.
   const hero = 1 - THREE.MathUtils.smoothstep(progress, 0, 0.08);
-  const finale = easeInOut(clamp01((progress - S(7)[0]) / (S(7)[1] - S(7)[0])));
+  const finale = easeInOut(clamp01((progress - S(SECTIONS)[0]) / (S(SECTIONS)[1] - S(SECTIONS)[0])));
   car.group.rotation.y = hero * Math.sin(time * 0.35) * 0.25 + finale * Math.sin(time * 0.18) * 0.35;
 
   const spin = 2.2 * hero + velocity * 60;

@@ -22,7 +22,12 @@
 
     <header class="topbar">
       <div class="brand"><span class="logo">◢</span> ANATOMIA <em>458</em></div>
-      <div class="meta mono"><span id="stage-name">Início</span> · <span id="counter">00 / 07</span></div>
+      <div class="top-right">
+        <div class="meta mono"><span id="stage-name">Início</span> · <span id="counter">00 / 08</span></div>
+        <button id="sound" class="mono" aria-pressed="false" aria-label="Alternar som">
+          <i class="bars"><b></b><b></b><b></b><b></b></i><span>Som desligado</span>
+        </button>
+      </div>
     </header>
     <div class="progress"><div id="bar"></div></div>
     <nav id="rail" aria-label="Capítulos"></nav>
@@ -32,7 +37,7 @@
       <div class="hint">Passe o mouse sobre as peças</div>
     </div>
 
-    <div id="tip"><span class="cat"></span><strong></strong></div>
+    <div id="tip"><span class="cat"></span><strong></strong><span class="info"></span></div>
 
     <main>
       <section class="panel hero left" data-stage="Início">
@@ -40,9 +45,10 @@
           <p class="eyebrow mono">Ferrari 458 Spider · Anatomia interativa</p>
           <h1>Desmonte<br /><span class="grad">a lenda.</span></h1>
           <p class="lead">
-            V8 de 570 cv a 9.000 rpm, motor central e <span id="hero-count">0</span> conjuntos em perfeita sincronia.
-            Role a página e veja cada um deles se soltar.
+            V8 de 570 cv a 9.000 rpm e <span id="hero-count">0</span> peças — do virabrequim ao último fio do chicote.
+            Ligue o motor, aumente o som e role a página: quanto mais rápido você rolar, mais alto ele gira.
           </p>
+          <button id="ignite" class="mono"><span class="dot"></span>Ligar o motor</button>
           <div class="paint">
             <div class="swatches">
               <button class="swatch active" data-color="#a30d14" data-name="Rosso Corsa" aria-label="Rosso Corsa"></button>
@@ -61,7 +67,7 @@
         <div class="card">
           <span class="num mono">01</span>
           <h2>Capô &amp; tampa do motor</h2>
-          <p>O capô dianteiro esconde o porta-malas. A tampa traseira, com aletas de ventilação, protege o V8 montado no centro do carro, logo atrás dos bancos.</p>
+          <p>O capô dianteiro sai primeiro e leva junto o revestimento do porta-malas, revelando bateria, fusíveis e ABS. A tampa traseira protege o V8 montado no centro do carro.</p>
           <ul class="specs mono">
             <li><b>42 / 58</b>distribuição de peso</li>
             <li><b>360 kg</b>downforce a 200 km/h</li>
@@ -73,10 +79,10 @@
         <div class="card">
           <span class="num mono">02</span>
           <h2>Portas</h2>
-          <p>As portas de alumínio se abrem pela dobradiça dianteira e levam junto o retrovisor e o revestimento interno em couro e carbono.</p>
+          <p>Cada porta se abre pela dobradiça e se desmonta no ar: painel externo em alumínio, forro interno em couro, retrovisor e o alto-falante de 165 mm escondido lá dentro.</p>
           <ul class="specs mono">
-            <li><b>Alumínio</b>painéis externos</li>
-            <li><b>Carbono</b>acabamento interno</li>
+            <li><b>4 peças</b>por porta</li>
+            <li><b>165 mm</b>woofer de porta</li>
           </ul>
         </div>
       </section>
@@ -85,7 +91,7 @@
         <div class="card">
           <span class="num mono">03</span>
           <h2>Carroceria</h2>
-          <p>Para-brisa, arcos de proteção, para-lamas, painéis laterais, para-choques e conjuntos óticos se afastam e deixam à mostra o chassi spaceframe de alumínio.</p>
+          <p>Para-brisa, limpadores, para-lamas, painéis laterais, para-choques, faróis e lanternas se afastam e deixam à mostra o chassi spaceframe de alumínio.</p>
           <ul class="specs mono">
             <li><b>1.430 kg</b>peso a seco</li>
             <li><b>Pininfarina</b>design</li>
@@ -97,7 +103,7 @@
         <div class="card">
           <span class="num mono">04</span>
           <h2>Rodas, freios &amp; suspensão</h2>
-          <p>Rodas forjadas de 20", discos carbono-cerâmicos com pinças monobloco e suspensão double-wishbone na dianteira, com amortecimento magnetoreológico.</p>
+          <p>Rodas forjadas soltam o pneu, a pinça (com as pastilhas) e o disco carbono-cerâmico. Depois saem manga de eixo, bandejas, amortecedores, barras estabilizadoras, caixa de direção, servofreio, ABS e as linhas de freio.</p>
           <ul class="specs mono">
             <li><b>398 mm</b>discos dianteiros</li>
             <li><b>32,5 m</b>de 100 a 0 km/h</li>
@@ -109,7 +115,7 @@
         <div class="card">
           <span class="num mono">05</span>
           <h2>V8 4.5 aspirado</h2>
-          <p>Bloco, cabeçotes, tampas de válvulas, plenum e coletores se separam em camadas. Junto com eles saem o câmbio de dupla embreagem e os radiadores dianteiros.</p>
+          <p>Primeiro o lado da admissão: caixas de ar, borboletas, plenum, bobinas, chicotes, injetores e velas. Depois tampas, comandos e cabeçotes — até o bloco abrir e mostrar pistões, bielas e o virabrequim plano. O ronco some à medida que o motor é desmontado.</p>
           <ul class="specs mono">
             <li><b>570 cv</b>a 9.000 rpm</li>
             <li><b>3,4 s</b>de 0 a 100 km/h</li>
@@ -121,7 +127,7 @@
         <div class="card">
           <span class="num mono">06</span>
           <h2>Interior</h2>
-          <p>Volante com manettino e luzes de troca, bancos concha, painel e console central em fibra de carbono flutuam para fora do cockpit.</p>
+          <p>Painel, quadro de instrumentos, volante e borboletas, encostos e assentos separados, trilhos, cintos de 3 pontos, pedaleira, tapetes, ar-condicionado com seus dutos, airbag e o carpete do assoalho.</p>
           <ul class="specs mono">
             <li><b>2</b>lugares</li>
             <li><b>F1-Trac</b>controle de tração</li>
@@ -129,11 +135,24 @@
         </div>
       </section>
 
-      <section class="panel final left" data-stage="Explodida">
+      <section class="panel right" data-stage="Elétrica">
         <div class="card">
           <span class="num mono">07</span>
+          <h2>Elétrica &amp; áudio</h2>
+          <p>Os chicotes sobem fio a fio, cada um com sua cor, fita isolante e conectores. Bateria, fusíveis e relés, centrais do motor, BCM, buzinas — e o sistema de som: tweeters, alto-falante central, subwoofer, amplificador e todo o cabeamento.</p>
+          <ul class="specs mono">
+            <li><b>2 ECUs</b>uma por banco</li>
+            <li><b>6 falantes</b>+ amplificador</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel final left" data-stage="Explodida">
+        <div class="card">
+          <span class="num mono">08</span>
           <h2>Vista explodida</h2>
-          <p><b id="final-count">0</b> conjuntos, nenhum sobrando. Passe o mouse para identificar cada um.</p>
+          <p><b id="final-count">0</b> peças, nenhuma sobrando — por último saem tanque, escape, tubulação de arrefecimento e subchassis. Passe o mouse para identificar cada uma.</p>
+          <ul id="inventory" class="inventory mono"></ul>
           <button id="reassemble" class="mono">Remontar ↑</button>
         </div>
       </section>
