@@ -128,6 +128,12 @@ h2 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -0.02em; line-height: 1.
 }
 #reassemble:hover { background: var(--accent); }
 
+.credits {
+  position: relative; z-index: 6; padding: 18px clamp(20px, 4vw, 48px) 22px; text-align: center;
+  font-size: 10px; letter-spacing: 0.06em; line-height: 1.7; color: #5d6574;
+}
+.credits a { color: #8a93a3; }
+
 @media (max-width: 760px) {
   .panel, .panel.right { align-items: flex-end; justify-content: center; padding: 0 16px 90px; }
   .hero { align-items: flex-start !important; padding-top: 90px !important; }

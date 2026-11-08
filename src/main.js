@@ -1,54 +1,56 @@
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { buildCar, applyExplode, createMaterials, SECTIONS, S, clamp01, easeInOut } from './car.js';
+import { computeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
+import { loadCar, applyExplode, createMaterials, SECTIONS, S, clamp01, easeInOut } from './car.js';
 import './style.css';
+
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#scene');
 const isTouch = matchMedia('(pointer: coarse)').matches;
+const loaderText = $('#loader p');
 
 /* ---------------- Renderer & cena ---------------- */
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 
 const BG = 0x07080b;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(BG);
-scene.fog = new THREE.Fog(BG, 16, 36);
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-scene.environmentIntensity = 0.6;
+scene.fog = new THREE.Fog(BG, 18, 40);
 
-const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.1, 100);
+const camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 0.1, 100);
 
-const key = new THREE.DirectionalLight(0xffffff, 2.4);
-key.position.set(4, 10, 6);
+const key = new THREE.DirectionalLight(0xffffff, 1.6);
+key.position.set(5, 10, -4);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
-Object.assign(key.shadow.camera, { left: -7, right: 7, top: 7, bottom: -7, near: 1, far: 30 });
-key.shadow.bias = -0.0004;
-key.shadow.normalBias = 0.02;
+Object.assign(key.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6, near: 1, far: 30 });
+key.shadow.bias = -0.0003;
+key.shadow.normalBias = 0.015;
 scene.add(key);
-const rim = new THREE.DirectionalLight(0x5aa0ff, 1.6);
-rim.position.set(-6, 3, -6);
+const rim = new THREE.DirectionalLight(0x6aa8ff, 1.2);
+rim.position.set(-6, 3, 6);
 scene.add(rim);
-const warm = new THREE.DirectionalLight(0xff6a3d, 0.7);
-warm.position.set(6, 1, -4);
+const warm = new THREE.DirectionalLight(0xff7a45, 0.5);
+warm.position.set(6, 1.5, 5);
 scene.add(warm);
-scene.add(new THREE.HemisphereLight(0x8899aa, 0x080808, 0.3));
 
 /* Chão, brilho sob o carro, grade "blueprint" e partículas */
 const floor = new THREE.Mesh(
   new THREE.CircleGeometry(40, 64),
-  new THREE.MeshStandardMaterial({ color: 0x0b0c0f, roughness: 0.7, metalness: 0, envMapIntensity: 0.15 }),
+  new THREE.MeshStandardMaterial({ color: 0x0a0b0d, roughness: 0.62, metalness: 0, envMapIntensity: 0.03 }),
 );
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
@@ -68,20 +70,20 @@ function radialTexture(inner, outer) {
   return t;
 }
 const glow = new THREE.Mesh(
-  new THREE.PlaneGeometry(9, 5),
+  new THREE.PlaneGeometry(5, 9),
   new THREE.MeshBasicMaterial({
-    map: radialTexture('rgba(255,70,60,0.35)', 'rgba(0,0,0,0)'),
+    map: radialTexture('rgba(255,60,50,0.22)', 'rgba(0,0,0,0)'),
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   }),
 );
 glow.rotation.x = -Math.PI / 2;
-glow.position.y = 0.004;
+glow.position.y = 0.002;
 scene.add(glow);
 
 const grid = new THREE.GridHelper(40, 80, 0x3a4a66, 0x1a2230);
 grid.material.transparent = true;
 grid.material.depthWrite = false;
-grid.position.y = 0.002;
+grid.position.y = 0.001;
 scene.add(grid);
 
 const PCOUNT = isTouch ? 300 : 700;
@@ -96,15 +98,28 @@ pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
 const particles = new THREE.Points(
   pGeo,
   new THREE.PointsMaterial({
-    size: 0.045, map: radialTexture('rgba(255,255,255,1)', 'rgba(255,255,255,0)'),
-    color: 0x9fc2ff, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending,
+    size: 0.04, map: radialTexture('rgba(255,255,255,1)', 'rgba(255,255,255,0)'),
+    color: 0x9fc2ff, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending,
   }),
 );
 scene.add(particles);
 
-/* ---------------- Carro ---------------- */
+/* ---------------- Ambiente HDR + carro ---------------- */
 const M = createMaterials();
-const car = buildCar(M);
+let loadShare = [0, 0];
+const showLoad = () => (loaderText.textContent = `Ligando o motor… ${Math.round(((loadShare[0] + loadShare[1]) / 2) * 100)}%`);
+const pmrem = new THREE.PMREMGenerator(renderer);
+const [hdr, car] = await Promise.all([
+  new HDRLoader().loadAsync(`${import.meta.env.BASE_URL}hdr/studio.hdr`, (e) => {
+    if (e.total) (loadShare[0] = e.loaded / e.total), showLoad();
+  }),
+  loadCar(M, (f) => ((loadShare[1] = f), showLoad())),
+]);
+hdr.mapping = THREE.EquirectangularReflectionMapping;
+scene.environment = pmrem.fromEquirectangular(hdr).texture;
+scene.environmentIntensity = 0.55;
+scene.environmentRotation.y = Math.PI * 0.6;
+hdr.dispose();
 scene.add(car.group);
 $('#total-parts').textContent = car.parts.length;
 $('#final-count').textContent = car.parts.length;
@@ -113,32 +128,45 @@ $('#hero-count').textContent = car.parts.length;
 /* ---------------- Pós-processamento ---------------- */
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.5, 0.4, 2.2);
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.3, 0.35, 2.4);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
 /* ---------------- Câmera por capítulo ---------------- */
-// [posição, alvo, deslocamento lateral do enquadramento] — um por seção (0 = hero ... 7 = vista explodida)
+// [posição, alvo, deslocamento lateral do enquadramento] — um por seção. Frente do carro = -Z.
 const KEYS = [
-  [[6.4, 2.0, 7.4], [0, 0.6, 0], -3.5],
-  [[6.6, 3.6, 5.4], [0.3, 1.2, 0], 4],
-  [[1.2, 2.6, 8.6], [-0.3, 0.9, 0.6], -4],
-  [[-6.6, 5.4, 8.2], [0, 2.4, 0], 4],
-  [[4.8, 1.8, 6.4], [0.9, 0.6, 1.5], -4],
-  [[5.2, 3.6, 3.8], [1.35, 1.0, 0], 4],
-  [[-4.6, 3.6, 5.2], [-0.4, 1.3, 0], -4],
-  [[9.4, 5.6, 11.0], [0, 1.6, 0], 4],
-].map(([p, t, f]) => ({ pos: new THREE.Vector3(...p), tgt: new THREE.Vector3(...t), film: f }));
+  [[5.4, 1.45, -6.2], [0, 0.55, 0], -3.5],
+  [[-5.2, 4.4, -6.0], [0, 1.2, 0.3], 4],
+  [[7.6, 2.8, -2.4], [0.3, 0.8, -0.1], -4],
+  [[-7.6, 6.4, 7.0], [0, 1.2, 0], 4],
+  [[6.6, 2.6, -6.2], [1.0, 0.7, -0.4], -3.5],
+  [[-3.8, 4.0, 5.0], [0, 1.0, 1.0], 4],
+  [[4.6, 3.9, -3.8], [0, 1.3, -0.2], -4],
+  [[10.5, 6.8, -9.5], [0, 1.2, 0], 4],
+].map(([p, t, f]) => {
+  const tgt = new THREE.Vector3(...t);
+  return { tgt, sph: new THREE.Spherical().setFromVector3(new THREE.Vector3(...p).sub(tgt)), film: f };
+});
 
+// Orbit between keys (spherical lerp) so the camera never cuts through the car.
 const camPos = new THREE.Vector3();
 const camTgt = new THREE.Vector3();
+const sph = new THREE.Spherical();
 function cameraAt(p) {
   const f = clamp01(p) * SECTIONS;
   const i = Math.min(Math.floor(f), SECTIONS - 1);
   const t = easeInOut(f - i);
   const a = KEYS[i], b = KEYS[i + 1];
-  camPos.lerpVectors(a.pos, b.pos, t);
+  let dTheta = b.sph.theta - a.sph.theta;
+  if (dTheta > Math.PI) dTheta -= Math.PI * 2;
+  if (dTheta < -Math.PI) dTheta += Math.PI * 2;
+  sph.set(
+    THREE.MathUtils.lerp(a.sph.radius, b.sph.radius, t),
+    THREE.MathUtils.lerp(a.sph.phi, b.sph.phi, t),
+    a.sph.theta + dTheta * t,
+  );
   camTgt.lerpVectors(a.tgt, b.tgt, t);
+  camPos.setFromSpherical(sph).add(camTgt);
   return THREE.MathUtils.lerp(a.film, b.film, t);
 }
 
@@ -197,7 +225,21 @@ document.querySelectorAll('.swatch').forEach((btn) => {
 });
 
 /* ---------------- Hover nas peças ---------------- */
+// BVHs are built in small idle batches so the first frames stay smooth.
+const bvhQueue = [...car.meshes];
+let bvhReady = false;
+(function buildBVH() {
+  const end = performance.now() + 8;
+  while (bvhQueue.length && performance.now() < end) {
+    const m = bvhQueue.pop();
+    if (!m.geometry.boundsTree) m.geometry.computeBoundsTree();
+  }
+  if (bvhQueue.length) setTimeout(buildBVH, 16);
+  else bvhReady = true;
+})();
+
 const raycaster = new THREE.Raycaster();
+raycaster.firstHitOnly = true;
 const tip = $('#tip');
 const hlCache = new Map();
 let hovered = null;
@@ -206,12 +248,10 @@ function highlightMat(mat) {
   let h = hlCache.get(mat);
   if (!h) {
     h = mat.clone();
-    h.color = mat.color; // share so paint changes stay in sync
-    if (!mat.emissiveIntensity || mat.emissive.getHex() === 0) {
+    h.color = mat.color; // shared so paint changes stay in sync
+    if (h.emissive) {
       h.emissive = new THREE.Color(0x2f7bff);
-      h.emissiveIntensity = 0.45;
-    } else {
-      h.emissiveIntensity = mat.emissiveIntensity * 1.6;
+      h.emissiveIntensity = 0.5;
     }
     hlCache.set(mat, h);
   }
@@ -244,6 +284,9 @@ timer.connect(document);
 let lastProgress = progress;
 let activeIndex = -1;
 let frame = 0;
+const right = new THREE.Vector3();
+const up = new THREE.Vector3();
+const AO_OFF = S(3, 0.3)[0];
 
 function resize() {
   camera.aspect = innerWidth / innerHeight;
@@ -265,14 +308,15 @@ function tick(now) {
   lastProgress = progress;
 
   const loose = applyExplode(car.parts, progress);
+  car.ao.visible = progress < AO_OFF;
 
   // Hero: turntable suave; final: leve órbita contemplativa.
   const hero = 1 - THREE.MathUtils.smoothstep(progress, 0, 0.08);
   const finale = easeInOut(clamp01((progress - S(7)[0]) / (S(7)[1] - S(7)[0])));
-  car.group.rotation.y = hero * Math.sin(time * 0.35) * 0.3 + finale * Math.sin(time * 0.18) * 0.35;
+  car.group.rotation.y = hero * Math.sin(time * 0.35) * 0.25 + finale * Math.sin(time * 0.18) * 0.35;
 
-  const spin = 2.5 * hero + velocity * 60;
-  for (const w of car.spinners) w.rotation.z -= spin * dt;
+  const spin = 2.2 * hero + velocity * 60;
+  for (const w of car.spinners) w.rotation.x -= spin * dt;
 
   M.paint.color.lerp(paintTarget, 1 - Math.exp(-dt * 6));
 
@@ -284,13 +328,14 @@ function tick(now) {
   mouseSmooth.lerp(mouse, 1 - Math.exp(-dt * 3));
   camera.position.copy(camPos);
   camera.lookAt(camTgt);
-  camera.position.addScaledVector(new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion), mouseSmooth.x * 0.35);
-  camera.position.addScaledVector(new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion), mouseSmooth.y * 0.2);
+  right.set(1, 0, 0).applyQuaternion(camera.quaternion);
+  up.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  camera.position.addScaledVector(right, mouseSmooth.x * 0.35).addScaledVector(up, mouseSmooth.y * 0.2);
   camera.lookAt(camTgt);
   camera.filmOffset = aspect > 1.15 ? film : 0;
   camera.updateProjectionMatrix();
 
-  grid.material.opacity = 0.06 + 0.4 * THREE.MathUtils.smoothstep(progress, 0.25, 1);
+  grid.material.opacity = 0.05 + 0.4 * THREE.MathUtils.smoothstep(progress, 0.25, 1);
   glow.material.opacity = 1 - 0.7 * THREE.MathUtils.smoothstep(progress, 0.3, 0.6);
   particles.rotation.y += dt * 0.012;
   particles.position.y = Math.sin(time * 0.2) * 0.15;
@@ -307,7 +352,7 @@ function tick(now) {
   barEl.style.transform = `scaleX(${progress})`;
 
   // Hover (desktop)
-  if (!isTouch && pointer.inside && frame % 2 === 0) {
+  if (!isTouch && bvhReady && pointer.inside && frame % 2 === 0) {
     raycaster.setFromCamera(mouse, camera);
     const hit = raycaster.intersectObjects(car.meshes, false)[0];
     setHover(hit ? hit.object.userData.part : null);
@@ -315,7 +360,7 @@ function tick(now) {
   if (hovered) tip.style.transform = `translate(${pointer.x + 18}px, ${pointer.y + 18}px)`;
 
   composer.render();
-  if (++frame === 2) document.body.classList.add('ready');
+  if (++frame === 3) document.body.classList.add('ready');
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
