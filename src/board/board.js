@@ -66,6 +66,43 @@ function mergePart(part) {
   for (const [mat, geos] of byMat) part.add(new THREE.Mesh(geos.length > 1 ? mergeGeometries(geos) : geos[0], mat));
 }
 
+/**
+ * Swept, pitched fan blades merged into one geometry (fan axis = +z). Each blade is a sickle
+ * outline extruded thin, then twisted into a helix: steep at the root, flatter at the tip.
+ */
+function fanBlades(detail = 1, n = 9, r0 = 0.1, r1 = 0.395) {
+  const steps = Math.max(6, Math.round(14 * detail));
+  const sweep = (u) => 0.55 * u * u; // backward sweep (rad) at radius fraction u
+  const half = (u) => 0.2 + 0.12 * Math.sin(Math.PI * Math.min(1, u * 1.15)); // half chord (rad)
+  const at = (r, a) => new THREE.Vector2(Math.cos(a) * r, Math.sin(a) * r);
+  const pts = [];
+  for (let i = 0; i <= steps; i++) {
+    const u = i / steps;
+    pts.push(at(r0 + (r1 - r0) * u, sweep(u) + half(u)));
+  }
+  for (let i = steps; i >= 0; i--) {
+    const u = i / steps;
+    pts.push(at(r0 + (r1 - r0) * u, sweep(u) - half(u)));
+  }
+  const geo = new THREE.ExtrudeGeometry(new THREE.Shape(pts), {
+    depth: 0.004, bevelEnabled: true, bevelThickness: 0.002, bevelSize: 0.003, bevelSegments: detail < 1 ? 1 : 2,
+  });
+  geo.translate(0, 0, -0.002);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i);
+    const r = Math.hypot(x, y), u = Math.min(1, Math.max(0, (r - r0) / (r1 - r0)));
+    let d = Math.atan2(y, x) - sweep(u);
+    d = Math.atan2(Math.sin(d), Math.cos(d));
+    pos.setZ(i, pos.getZ(i) + d * r * Math.tan(THREE.MathUtils.lerp(0.75, 0.38, u)) * 0.55);
+  }
+  geo.deleteAttribute('uv');
+  geo.computeVertexNormals();
+  const blades = Array.from({ length: n }, (_, k) => geo.clone().rotateZ((k / n) * Math.PI * 2));
+  geo.dispose();
+  return mergeGeometries(blades);
+}
+
 /* ------------------------------------------------------------------ */
 /* Materials                                                           */
 /* ------------------------------------------------------------------ */
@@ -356,14 +393,46 @@ export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
     g.fillText('STACK · FERRAMENTAS · LINGUAGENS', 124, h / 2 + 100);
   });
   const backMat = new THREE.MeshStandardMaterial({ map: backTex, metalness: 0.7, roughness: 0.4 });
+  const FAN_T = [0.2, 0.5, 0.8];
+  const FAN_R = 0.43; // shroud opening; every fan ring below is centred on it
   const shroudTex = canvasTex(2048, 800, (g, w, h) => {
     g.fillStyle = '#1b1d22';
     g.fillRect(0, 0, w, h);
-    for (const cx of [0.2, 0.5, 0.8]) {
-      g.fillStyle = '#060607';
+    g.strokeStyle = 'rgba(255,255,255,0.05)';
+    g.lineWidth = 2;
+    for (let x = -h; x < w; x += 26) {
       g.beginPath();
-      g.arc(cx * w, h / 2, h * 0.43, 0, Math.PI * 2);
+      g.moveTo(x, h);
+      g.lineTo(x + h * 0.6, 0);
+      g.stroke();
+    }
+    const px = h / gh;
+    for (const t of FAN_T) {
+      const cx = t * w, cy = h / 2, r = FAN_R * px;
+      const bevel = g.createRadialGradient(cx, cy, r, cx, cy, r + 26);
+      bevel.addColorStop(0, '#5d636c');
+      bevel.addColorStop(1, 'rgba(27,29,34,0)');
+      g.fillStyle = bevel;
+      g.beginPath();
+      g.arc(cx, cy, r + 26, 0, Math.PI * 2);
       g.fill();
+      const well = g.createRadialGradient(cx, cy, r * 0.2, cx, cy, r);
+      well.addColorStop(0, '#0b0c0e');
+      well.addColorStop(1, '#030304');
+      g.fillStyle = well;
+      g.beginPath();
+      g.arc(cx, cy, r, 0, Math.PI * 2);
+      g.fill();
+      // stator struts seen behind the blades
+      g.strokeStyle = '#17191d';
+      g.lineWidth = 10;
+      for (let k = 0; k < 4; k++) {
+        const a = (k / 4) * Math.PI * 2 + Math.PI / 4;
+        g.beginPath();
+        g.moveTo(cx, cy);
+        g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+        g.stroke();
+      }
     }
     g.fillStyle = '#9aa1ab';
     g.fillRect(0, h - 40, w, 16);
@@ -382,19 +451,28 @@ export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
     box(0.02, gh + 0.2, 0.46, M.steel, [-1.54, 0.12 + gh / 2, gz + 0.2], undefined, 0.002),
     ...[0.25, 0.5, 0.75].map((t) => box(0.025, 0.08, 0.06, M.hole, [-1.555, 0.06 + gh * t, gz + 0.2])),
   ];
-  for (const t of [0.2, 0.5, 0.8]) {
+  const bladeGeo = fanBlades(SMD > 0.5 ? 1 : 0.5);
+  const bladeMat = new THREE.MeshStandardMaterial({ color: 0x1c1f25, metalness: 0.35, roughness: 0.32, side: THREE.DoubleSide });
+  const ring = (r, tube, mat, z, seg = 96) => mesh(new THREE.TorusGeometry(r, tube, 10, seg), mat, [0, 0, z]);
+  const disc = (r, len, mat, z) => cyl(r, len, mat, [0, 0, z], 'z', 48);
+  for (const t of FAN_T) {
+    const cx = gx0 + (gx1 - gx0) * t, cy = 0.06 + gh / 2;
+    // Static frame: bevelled rim + RGB halo around the opening.
+    gpuParts.push(
+      mesh(new THREE.TorusGeometry(FAN_R + 0.008, 0.014, 12, 96), M.sinkLight, [cx, cy, gz + 0.398]),
+      keep(mesh(new THREE.TorusGeometry(FAN_R - 0.014, 0.004, 8, 96), M.rgb2, [cx, cy, gz + 0.402])),
+    );
     const fan = new THREE.Group();
     fan.userData.keep = true;
-    fan.position.set(gx0 + (gx1 - gx0) * t, 0.06 + gh / 2, gz + 0.41);
-    fan.add(cyl(0.08, 0.03, M.plastic, [0, 0, 0], 'z', 24));
-    fan.add(cyl(0.05, 0.004, M.sinkLight, [0, 0, 0.016], 'z', 24));
-    for (let k = 0; k < 11; k++) {
-      const a = (k / 11) * Math.PI * 2;
-      const blade = mesh(rbox(0.32, 0.075, 0.006, 0.003), M.fan, [Math.cos(a) * 0.24, Math.sin(a) * 0.24, 0]);
-      blade.rotation.set(0.45, 0, a + 0.25);
-      fan.add(blade);
-    }
-    fan.add(mesh(new THREE.TorusGeometry(0.42, 0.012, 8, 64), M.plastic));
+    fan.position.set(cx, cy, gz + 0.425);
+    fan.add(mesh(bladeGeo, bladeMat));
+    // Blade-tip ring, then the hub: body, chrome ring, cap, inner ring and lit badge on one axis.
+    fan.add(ring(0.393, 0.008, bladeMat, 0));
+    fan.add(disc(0.118, 0.034, M.plastic, 0));
+    fan.add(ring(0.112, 0.006, M.sinkLight, 0.017, 64));
+    fan.add(disc(0.094, 0.006, M.sink, 0.019));
+    fan.add(ring(0.062, 0.004, M.sinkLight, 0.022, 64));
+    fan.add(disc(0.048, 0.004, M.rgb2, 0.022));
     fans.push(fan);
     gpuParts.push(fan);
   }
