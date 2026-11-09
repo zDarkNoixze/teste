@@ -134,7 +134,7 @@ const KEYS = [
   [[1.7, -2.6, 6.4], [0.15, -0.05, 0.2], -3.6],
   [[-1.25, 1.75, 2.3], [-0.42, 0.36, 0.05], 3.8],
   [[2.45, 1.45, 2.1], [0.38, 0.42, 0.25], -5.2],
-  [[1.0, -3.4, 2.6], [-0.2, -0.65, 0.5], 3.8],
+  [[1.55, 1.75, 2.75], [-0.2, -0.38, 0.4], 3.8],
   [[-1.2, 0.25, 2.1], [-0.6, -0.14, 0.05], -4.2],
   [[-3.6, 0.9, 5.2], [-0.15, 0.0, 0.3], 3.6],
 ].map(([p, t, f]) => {
@@ -283,7 +283,7 @@ const hlCache = new Map();
 let hovered = null;
 function hl(mat) {
   if (Array.isArray(mat)) return mat.map(hl);
-  if (!mat.emissive) return mat;
+  if (!mat.emissive || mat.userData.keepLook) return mat;
   let h = hlCache.get(mat);
   if (!h) {
     h = mat.clone();
@@ -352,11 +352,13 @@ let activeIndex = -1;
 let frame = 0;
 const boost = new Array(6).fill(0);
 const lift = projects.map(() => 0);
+const glow = projects.map(() => 0);
 const right = new THREE.Vector3();
 const up = new THREE.Vector3();
 const tmp = new THREE.Vector3();
 const ZERO = new THREE.Vector2();
 let flash = 0;
+let sweeping = false; // true while a dev sweep re-poses the scene
 
 function resize() {
   camera.aspect = innerWidth / innerHeight;
@@ -378,6 +380,8 @@ function placeParts(time) {
     const inv = 1 - e;
     const { base, baseRot } = g.userData;
     g.position.copy(base).addScaledVector(off, inv);
+    // easeOutBack overshoots past the seat; never let a part sink into the PCB (it would vanish behind it).
+    g.position.y = base.y + off.y * Math.max(inv, 0);
     g.rotation.set(baseRot.x + rot.x * inv, baseRot.y + rot.y * inv, baseRot.z + rot.z * inv);
     if (!ins.noFloat && t < 1) {
       const bob = (1 - t) * (reduced ? 0 : 1);
@@ -391,9 +395,9 @@ function placeParts(time) {
     }
     const was = ins.done;
     ins.done = t >= 1;
-    if (ins.done && !was && frame > 2 && !ins.noFloat) {
+    if (ins.done && !was && frame > 2 && !ins.noFloat && !sweeping) {
       g.getWorldPosition(tmp);
-      flashLight.position.copy(tmp).add(new THREE.Vector3(0, 0, 0.3));
+      flashLight.position.copy(tmp).add(new THREE.Vector3(0, 0, 0.45));
       flash = 1;
     }
   }
@@ -432,6 +436,35 @@ if (import.meta.env.DEV) {
    * - flicker: the part leaves the view frustum and comes back within one section
    */
   window.__ram = () => B.ram.map((r) => ({ color: '#' + r.color.getHexString(), gain: +r.gain.toFixed(2), intensity: +r.light.emissiveIntensity.toFixed(2) }));
+  // Contact sheet of the 3D scene across the scroll range (rendered in chunks: software GL is slow).
+  let sheet = null;
+  window.__sheetStart = (n = 48, cols = 6, w = 360) => {
+    const h = Math.round((w * innerHeight) / innerWidth);
+    sheet = { n, cols, w, h, c: Object.assign(document.createElement('canvas'), { width: cols * w, height: Math.ceil(n / cols) * h }) };
+    return `${sheet.c.width}x${sheet.c.height}`;
+  };
+  window.__sheetAdd = (from, to) => {
+    const g = sheet.c.getContext('2d');
+    const saved = progress;
+    for (let i = from; i < Math.min(to, sheet.n); i++) {
+      progress = i / (sheet.n - 1);
+      sweeping = true;
+      placeParts(0);
+      aimCamera(0);
+      composer.render();
+      const x = (i % sheet.cols) * sheet.w, y = Math.floor(i / sheet.cols) * sheet.h;
+      g.drawImage(renderer.domElement, x, y, sheet.w, sheet.h);
+      g.fillStyle = 'rgba(0,0,0,0.6)';
+      g.fillRect(x, y, 74, 20);
+      g.fillStyle = '#fff';
+      g.font = '13px monospace';
+      g.fillText(progress.toFixed(3), x + 6, y + 15);
+    }
+    progress = saved;
+    sweeping = false;
+    return to;
+  };
+  window.__sheetGet = () => sheet.c.toDataURL('image/jpeg', 0.72).split(',')[1];
   window.__probe = (steps = 400, margin = 0.12) => {
     const saved = progress;
     const frustum = new THREE.Frustum();
@@ -441,6 +474,7 @@ if (import.meta.env.DEV) {
     const seen = new Map();
     for (let s = 0; s <= steps; s++) {
       progress = s / steps;
+      sweeping = true;
       placeParts(0);
       aimCamera(0);
       scene.updateMatrixWorld(true);
@@ -460,6 +494,7 @@ if (import.meta.env.DEV) {
       }
     }
     progress = saved;
+    sweeping = false;
     const flicker = Object.fromEntries([...seen].filter(([, h]) => h.out.length).map(([n, h]) => [n, h.out]));
     const nearR = Object.fromEntries(Object.entries(near).map(([n, a]) => [n, [a[0], a[a.length - 1], a.length]]));
     return JSON.stringify({ near: nearR, flicker }, null, 1);
@@ -474,16 +509,18 @@ function tick(now) {
   progress += (targetProgress - progress) * (1 - Math.exp(-dt * (reduced ? 20 : 5)));
   if (Math.abs(targetProgress - progress) < 1e-5) progress = targetProgress;
 
-  const { installed, doneBySection } = placeParts(time);
+  const { installed } = placeParts(time);
   const power = 0.3 + 0.14 * installed.length;
 
-  // RAM sticks lift while their project is focused
+  // RAM: the RGB bar lights only while its project is hovered (3D stick or card) or open.
+  const hover3D = hovered?.userData.kind === 'ram' ? hovered.userData.project : -1;
   B.ram.forEach((r, i) => {
     const want = modalProject === i ? 1 : hoverProject === i ? 0.45 : 0;
     lift[i] += (want - lift[i]) * (1 - Math.exp(-dt * 8));
     r.g.position.y += lift[i] * 0.22;
-    const on = installed.includes(2) || doneBySection[2] > i ? 1 : 0.15;
-    r.light.emissiveIntensity = on * r.gain * (1 + Math.sin(time * 2 + i) * 0.18) + lift[i] * 2.5;
+    const active = modalProject === i || hoverProject === i || hover3D === i ? 1 : 0;
+    glow[i] += (active - glow[i]) * (1 - Math.exp(-dt * 10));
+    r.light.emissiveIntensity = glow[i] * r.gain * (1 + Math.sin(time * 3 + i) * 0.12);
   });
 
   // Lights, fans, codes
@@ -501,7 +538,7 @@ function tick(now) {
   const net = installed.includes(5);
   B.blink.forEach((m, i) => (m.emissiveIntensity = net ? (Math.sin(time * (9 + i * 5)) > 0.2 ? 3 : 0.3) : 0));
   flash = Math.max(0, flash - dt * 2.2);
-  flashLight.intensity = flash * 2.2;
+  flashLight.intensity = flash * 0.7;
 
   // Data pulses
   const idx = Math.round(progress * SECTIONS);
@@ -509,7 +546,7 @@ function tick(now) {
   for (let g = 0; g < 6; g++) {
     let want = g === focus && idx > 0 ? 1 : 0.12;
     if (idx === SECTIONS) want = 0.7;
-    if (hoverProject >= 0 && g === G.RAM) want = 1;
+    if ((hoverProject >= 0 || hover3D >= 0) && g === G.RAM) want = 1;
     boost[g] += (want - boost[g]) * (1 - Math.exp(-dt * 3));
   }
   pulses.uniforms.uBoost.value = boost;
