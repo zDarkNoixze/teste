@@ -199,7 +199,7 @@ export async function startScene(app, tier, { govern = true } = {}) {
     [[1.7, -2.6, 6.4], [0.15, -0.05, 0.2], -3.6],
     [[-1.25, 1.75, 2.3], [-0.42, 0.36, 0.05], 3.8],
     [[2.45, 1.45, 2.1], [0.38, 0.42, 0.25], -5.2],
-    [[1.55, 1.75, 2.75], [-0.2, -0.38, 0.4], 3.8],
+    [[1.0, -3.4, 2.6], [-0.2, -0.65, 0.5], 3.8], // below the card, facing the fans
     [[-1.2, 0.25, 2.1], [-0.6, -0.14, 0.05], -4.2],
     [[-3.6, 0.9, 5.2], [-0.15, 0.0, 0.3], 3.6],
   ].map(([p, t, f]) => {
@@ -382,6 +382,8 @@ export async function startScene(app, tier, { govern = true } = {}) {
     B.M.rgb.emissiveIntensity = 0.4 + power * 2.4;
     B.M.rgb2.emissive.setHSL((hue + 0.33) % 1, 0.9, 0.55);
     B.M.rgb2.emissiveIntensity = installed.includes(3) ? 3 : 0.3;
+    B.M.fanGlow.emissive.copy(B.M.rgb2.emissive);
+    B.M.fanGlow.emissiveIntensity = installed.includes(3) ? 0.9 : 0.1;
     const fanSpeed = installed.includes(3) ? 14 : 1.2;
     for (const f of B.fans) f.rotation.z -= fanSpeed * dt;
     B.leds.CPU.emissiveIntensity = installed.includes(1) ? 3 : 0;
@@ -578,6 +580,8 @@ export async function startScene(app, tier, { govern = true } = {}) {
       B.M.rgb.emissiveIntensity = on ? 1.6 : 1.1;
       B.M.rgb2.emissive.setHSL(0.86, 0.9, 0.55);
       B.M.rgb2.emissiveIntensity = on ? 2 : 0.3;
+      B.M.fanGlow.emissive.copy(B.M.rgb2.emissive);
+      B.M.fanGlow.emissiveIntensity = on ? 0.7 : 0.1;
       for (const k of ['CPU', 'DRAM', 'VGA', 'BOOT']) B.leds[k].emissiveIntensity = on ? 3 : 0;
       B.setCode(on ? 'AA' : 'b0');
       pulses.uniforms.uPower.value = on ? 0.9 : 0.3;
