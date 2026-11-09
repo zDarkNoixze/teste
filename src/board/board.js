@@ -20,14 +20,21 @@ const AX = { x: [0, 0, Math.PI / 2], y: [0, 0, 0], z: [Math.PI / 2, 0, 0] };
 const cyl = (rad, len, mat, p, axis = 'y', seg = 24, r2 = rad) => mesh(new THREE.CylinderGeometry(rad, r2, len, seg), mat, p, AX[axis]);
 const keep = (m) => ((m.userData.keep = true), m);
 
+// Texture budget for the current quality tier (set by buildBoard).
+let TEX_SCALE = 1;
+let ANISO = 8;
+
+/** Canvas texture drawn in logical `w`×`h` units, stored at the tier's resolution. */
 function canvasTex(w, h, draw, { srgb = true } = {}) {
   const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  draw(c.getContext('2d'), w, h);
+  c.width = Math.max(64, Math.round(w * TEX_SCALE));
+  c.height = Math.max(64, Math.round(h * TEX_SCALE));
+  const g = c.getContext('2d');
+  g.scale(c.width / w, c.height / h);
+  draw(g, w, h);
   const t = new THREE.CanvasTexture(c);
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 8;
+  t.anisotropy = ANISO;
   return t;
 }
 const MONO = '"JetBrains Mono", monospace';
@@ -90,7 +97,6 @@ function materials() {
     portRed: std({ color: 0xd6203a, roughness: 0.45 }),
     portTeal: std({ color: 0x18b6a8, roughness: 0.45 }),
     hole: std({ color: 0x050506, roughness: 1 }),
-    glass: new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 1, roughness: 0.08, thickness: 0.01 }),
     rgb: std({ color: 0x111111, emissive: 0xffffff, emissiveIntensity: 2.2 }),
     rgb2: std({ color: 0x111111, emissive: 0xffffff, emissiveIntensity: 2.2 }),
     ledOff: std({ color: 0x2a0d0d, emissive: 0xff2a2a, emissiveIntensity: 0 }),
@@ -101,7 +107,10 @@ function materials() {
 /* Builder                                                             */
 /* ------------------------------------------------------------------ */
 
-export function buildBoard({ profile, projects }, pcbTexture, S) {
+export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
+  TEX_SCALE = Q.tex ?? 1;
+  ANISO = Q.aniso ?? 8;
+  const SMD = Q.smd ?? 1;
   const M = materials();
   const root = new THREE.Group();
   const parts = [];
@@ -665,9 +674,9 @@ export function buildBoard({ profile, projects }, pcbTexture, S) {
     inst.receiveShadow = true;
     return part({ name, spec, desc }, [inst]);
   };
-  smd(900, new THREE.BoxGeometry(0.012, 0.006, 0.006), M.ic, 'Resistores SMD', '0402 · milhares na placa', 'Componentes minúsculos que controlam a corrente.');
-  smd(700, new THREE.BoxGeometry(0.01, 0.007, 0.006), new THREE.MeshStandardMaterial({ color: 0xa47c52, roughness: 0.6 }), 'Capacitores cerâmicos SMD', 'MLCC 0402', 'Filtram ruídos elétricos de alta frequência.');
-  smd(160, new THREE.BoxGeometry(0.03, 0.01, 0.03), M.ic, 'MOSFETs e reguladores', 'Conversão de energia', 'Pequenos chips de chaveamento espalhados pela placa.');
+  smd(Math.round(900 * SMD), new THREE.BoxGeometry(0.012, 0.006, 0.006), M.ic, 'Resistores SMD', '0402 · milhares na placa', 'Componentes minúsculos que controlam a corrente.');
+  smd(Math.round(700 * SMD), new THREE.BoxGeometry(0.01, 0.007, 0.006), new THREE.MeshStandardMaterial({ color: 0xa47c52, roughness: 0.6 }), 'Capacitores cerâmicos SMD', 'MLCC 0402', 'Filtram ruídos elétricos de alta frequência.');
+  smd(Math.round(160 * SMD), new THREE.BoxGeometry(0.03, 0.01, 0.03), M.ic, 'MOSFETs e reguladores', 'Conversão de energia', 'Pequenos chips de chaveamento espalhados pela placa.');
 
   /* ---------------- Finish ---------------- */
   for (const g of parts) {
@@ -675,7 +684,7 @@ export function buildBoard({ profile, projects }, pcbTexture, S) {
     g.traverse((o) => {
       if (!o.isMesh) return;
       o.userData.part = g;
-      if (!o.isInstancedMesh) o.castShadow = !o.material.transmission;
+      if (!o.isInstancedMesh) o.castShadow = true;
       o.receiveShadow = true;
     });
   }
