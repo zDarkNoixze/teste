@@ -432,6 +432,33 @@ if (import.meta.env.DEV) {
    * - flicker: the part leaves the view frustum and comes back within one section
    */
   window.__ram = () => B.ram.map((r) => ({ color: '#' + r.color.getHexString(), gain: +r.gain.toFixed(2), intensity: +r.light.emissiveIntensity.toFixed(2) }));
+  // Contact sheet of the 3D scene across the scroll range (rendered in chunks: software GL is slow).
+  let sheet = null;
+  window.__sheetStart = (n = 48, cols = 6, w = 360) => {
+    const h = Math.round((w * innerHeight) / innerWidth);
+    sheet = { n, cols, w, h, c: Object.assign(document.createElement('canvas'), { width: cols * w, height: Math.ceil(n / cols) * h }) };
+    return `${sheet.c.width}x${sheet.c.height}`;
+  };
+  window.__sheetAdd = (from, to) => {
+    const g = sheet.c.getContext('2d');
+    const saved = progress;
+    for (let i = from; i < Math.min(to, sheet.n); i++) {
+      progress = i / (sheet.n - 1);
+      placeParts(0);
+      aimCamera(0);
+      composer.render();
+      const x = (i % sheet.cols) * sheet.w, y = Math.floor(i / sheet.cols) * sheet.h;
+      g.drawImage(renderer.domElement, x, y, sheet.w, sheet.h);
+      g.fillStyle = 'rgba(0,0,0,0.6)';
+      g.fillRect(x, y, 74, 20);
+      g.fillStyle = '#fff';
+      g.font = '13px monospace';
+      g.fillText(progress.toFixed(3), x + 6, y + 15);
+    }
+    progress = saved;
+    return to;
+  };
+  window.__sheetGet = () => sheet.c.toDataURL('image/jpeg', 0.72).split(',')[1];
   window.__probe = (steps = 400, margin = 0.12) => {
     const saved = progress;
     const frustum = new THREE.Frustum();
