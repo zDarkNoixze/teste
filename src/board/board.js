@@ -304,7 +304,11 @@ export function buildBoard({ profile, projects }, pcbTexture, S) {
       box(0.032, 0.012, 1.3, M.sinkLight, [x, y0 + 0.337, L.dimmZ], undefined, 0.003),
     ], [x, y0, L.dimmZ]);
     install(stick, [0.25 + i * 0.12, 1.25 + i * 0.12, 0.2], [0.3, 0.5 - i * 0.2, 0.4], S(2, 0.05 + i * 0.16, 0.35 + i * 0.16));
-    ram.push({ g: stick, light, color });
+    // Equal-brightness glow whatever the project colour: bloom keys off luminance, so darker hues
+    // (pink, purple, blue) need a higher intensity than cyan or green to light up at all.
+    const lum = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+    const gain = Math.min(10, 1.45 / Math.max(lum, 0.05));
+    ram.push({ g: stick, light, color, gain });
   });
 
   /* ---------------- PCIe slots + GPU ---------------- */
