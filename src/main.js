@@ -219,13 +219,17 @@ document.querySelectorAll('a[href^="#"]').forEach((a) =>
   }),
 );
 
+// Reveal each section once and keep it: hiding cards (and replaying bars, timeline and the
+// heading scramble) while they were still on screen made content vanish and reappear on scroll.
 const io = new IntersectionObserver(
   (entries) =>
     entries.forEach((e) => {
-      e.target.classList.toggle('in', e.isIntersecting);
-      if (e.isIntersecting) e.target.querySelectorAll('.scr').forEach(scramble);
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      e.target.querySelectorAll('.scr').forEach(scramble);
+      io.unobserve(e.target);
     }),
-  { threshold: 0.4 },
+  { threshold: 0, rootMargin: '0px 0px -12% 0px' },
 );
 sections.forEach((s) => io.observe(s));
 
@@ -363,15 +367,8 @@ function resize() {
 }
 addEventListener('resize', resize);
 
-function tick(now) {
-  timer.update(now);
-  const dt = Math.min(timer.getDelta(), 0.05);
-  const time = timer.getElapsed();
-
-  progress += (targetProgress - progress) * (1 - Math.exp(-dt * (reduced ? 20 : 5)));
-  if (Math.abs(targetProgress - progress) < 1e-5) progress = targetProgress;
-
-  // Installation choreography
+/** Positions every installable part for the current `progress`. */
+function placeParts(time) {
   const doneBySection = [0, 0, 0, 0, 0, 0];
   const totalBySection = [0, 0, 0, 0, 0, 0];
   for (const ins of B.installs) {
@@ -401,6 +398,83 @@ function tick(now) {
     }
   }
   const installed = [1, 2, 3, 4, 5].filter((s) => totalBySection[s] && doneBySection[s] === totalBySection[s]);
+  return { installed, doneBySection };
+}
+
+function aimCamera(dt) {
+  const film = cameraAt(progress);
+  const aspect = innerWidth / innerHeight;
+  const dist = aspect < 1 ? 1 + (1 - aspect) * 1.9 : 1;
+  camPos.sub(camTgt).multiplyScalar(dist).add(camTgt);
+  mouseSmooth.lerp(pointer.inside ? mouse : ZERO, 1 - Math.exp(-dt * 2.5));
+  camera.position.copy(camPos);
+  camera.up.set(0, 1, 0);
+  camera.lookAt(camTgt);
+  right.set(1, 0, 0).applyQuaternion(camera.quaternion);
+  up.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  const sway = reduced ? 0 : 1;
+  camera.position.addScaledVector(right, mouseSmooth.x * 0.22 * sway).addScaledVector(up, mouseSmooth.y * 0.14 * sway);
+  camera.lookAt(camTgt);
+  camera.filmOffset = aspect > 1.15 ? film : 0;
+  // Portrait: panels sit at the bottom (top in the hero), so slide the board out of their way.
+  if (aspect < 1) {
+    const heroK = 1 - THREE.MathUtils.smoothstep(progress, 0, 1 / SECTIONS);
+    const shift = THREE.MathUtils.lerp(0.2, -0.24, heroK) * innerHeight;
+    camera.setViewOffset(innerWidth, innerHeight, 0, shift, innerWidth, innerHeight);
+  } else if (camera.view) camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+}
+
+if (import.meta.env.DEV) {
+  /*
+   * Sweeps the whole scroll range without rendering and reports, per part:
+   * - near: the camera gets closer than `margin` to the part (it gets clipped / camera passes through it)
+   * - flicker: the part leaves the view frustum and comes back within one section
+   */
+  window.__ram = () => B.ram.map((r) => ({ color: '#' + r.color.getHexString(), gain: +r.gain.toFixed(2), intensity: +r.light.emissiveIntensity.toFixed(2) }));
+  window.__probe = (steps = 400, margin = 0.12) => {
+    const saved = progress;
+    const frustum = new THREE.Frustum();
+    const m4 = new THREE.Matrix4();
+    const box = new THREE.Box3();
+    const near = {};
+    const seen = new Map();
+    for (let s = 0; s <= steps; s++) {
+      progress = s / steps;
+      placeParts(0);
+      aimCamera(0);
+      scene.updateMatrixWorld(true);
+      camera.updateMatrixWorld(true);
+      frustum.setFromProjectionMatrix(m4.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+      for (const part of B.parts) {
+        box.setFromObject(part);
+        const d = box.distanceToPoint(camera.position);
+        const name = part.userData.name;
+        if (d < margin) (near[name] ||= []).push(+progress.toFixed(3));
+        const vis = frustum.intersectsBox(box);
+        const h = seen.get(name) || { last: null, out: [] };
+        if (h.last === true && !vis) h.leftAt = progress;
+        if (h.last === false && vis && h.leftAt != null && progress - h.leftAt < 1 / SECTIONS) h.out.push([+h.leftAt.toFixed(3), +progress.toFixed(3)]);
+        h.last = vis;
+        seen.set(name, h);
+      }
+    }
+    progress = saved;
+    const flicker = Object.fromEntries([...seen].filter(([, h]) => h.out.length).map(([n, h]) => [n, h.out]));
+    const nearR = Object.fromEntries(Object.entries(near).map(([n, a]) => [n, [a[0], a[a.length - 1], a.length]]));
+    return JSON.stringify({ near: nearR, flicker }, null, 1);
+  };
+}
+
+function tick(now) {
+  timer.update(now);
+  const dt = Math.min(timer.getDelta(), 0.05);
+  const time = timer.getElapsed();
+
+  progress += (targetProgress - progress) * (1 - Math.exp(-dt * (reduced ? 20 : 5)));
+  if (Math.abs(targetProgress - progress) < 1e-5) progress = targetProgress;
+
+  const { installed, doneBySection } = placeParts(time);
   const power = 0.3 + 0.14 * installed.length;
 
   // RAM sticks lift while their project is focused
@@ -409,7 +483,7 @@ function tick(now) {
     lift[i] += (want - lift[i]) * (1 - Math.exp(-dt * 8));
     r.g.position.y += lift[i] * 0.22;
     const on = installed.includes(2) || doneBySection[2] > i ? 1 : 0.15;
-    r.light.emissiveIntensity = on * (1.3 + Math.sin(time * 2 + i) * 0.25) + lift[i] * 2.5;
+    r.light.emissiveIntensity = on * r.gain * (1 + Math.sin(time * 2 + i) * 0.18) + lift[i] * 2.5;
   });
 
   // Lights, fans, codes
@@ -443,27 +517,7 @@ function tick(now) {
   pulses.uniforms.uPower.value = power;
 
   // Camera
-  const film = cameraAt(progress);
-  const aspect = innerWidth / innerHeight;
-  const dist = aspect < 1 ? 1 + (1 - aspect) * 1.9 : 1;
-  camPos.sub(camTgt).multiplyScalar(dist).add(camTgt);
-  mouseSmooth.lerp(pointer.inside ? mouse : ZERO, 1 - Math.exp(-dt * 2.5));
-  camera.position.copy(camPos);
-  camera.up.set(0, 1, 0);
-  camera.lookAt(camTgt);
-  right.set(1, 0, 0).applyQuaternion(camera.quaternion);
-  up.set(0, 1, 0).applyQuaternion(camera.quaternion);
-  const sway = reduced ? 0 : 1;
-  camera.position.addScaledVector(right, mouseSmooth.x * 0.22 * sway).addScaledVector(up, mouseSmooth.y * 0.14 * sway);
-  camera.lookAt(camTgt);
-  camera.filmOffset = aspect > 1.15 ? film : 0;
-  // Portrait: panels sit at the bottom (top in the hero), so slide the board out of their way.
-  if (aspect < 1) {
-    const heroK = 1 - THREE.MathUtils.smoothstep(progress, 0, 1 / SECTIONS);
-    const shift = THREE.MathUtils.lerp(0.2, -0.24, heroK) * innerHeight;
-    camera.setViewOffset(innerWidth, innerHeight, 0, shift, innerWidth, innerHeight);
-  } else if (camera.view) camera.clearViewOffset();
-  camera.updateProjectionMatrix();
+  aimCamera(dt);
   dust.rotation.z += dt * 0.01;
   dust.position.y = Math.sin(time * 0.15) * 0.1;
 
