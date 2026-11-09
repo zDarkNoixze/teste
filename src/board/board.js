@@ -219,7 +219,7 @@ export function buildBoard({ profile, projects }, pcbTexture, S) {
     box(0.3, 0.008, 0.36, M.steel, [cpu.x, 0.051, cpu.z], undefined, 0.01),
     keep(mesh(new THREE.BoxGeometry(0.26, 0.022, 0.31), [M.steel, M.steel, new THREE.MeshStandardMaterial({ map: ihsTex, metalness: 1, roughness: 0.32 }), M.steel, M.steel, M.steel], [cpu.x, 0.064, cpu.z])),
   ], [cpu.x, 0.05, cpu.z]);
-  install(cpuGroup, [0, 1.1, 0.25], [0.5, 0.6, -0.2], S(1, 0.1, 0.6));
+  install(cpuGroup, [0, 0.6, 0], [0.22, 0.35, -0.12], S(1, 0.1, 0.6));
 
   /* ---------------- VRM, heatsinks, chokes, caps ---------------- */
   const finSink = (x0, x1, z0, z1, h, alongX) => {
@@ -293,7 +293,8 @@ export function buildBoard({ profile, projects }, pcbTexture, S) {
     });
     const spread = new THREE.MeshStandardMaterial({ color: 0x1a1c21, metalness: 0.8, roughness: 0.35 });
     const face = new THREE.MeshStandardMaterial({ map: label, metalness: 0.5, roughness: 0.4 });
-    const light = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: color, emissiveIntensity: 0.15, roughness: 0.4 });
+    const light = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: color, emissiveIntensity: 0, roughness: 0.4 });
+    light.userData.keepLook = true; // the hover highlight must not repaint the RGB bar
     const y0 = 0.035;
     const stick = part({ name: `${p.slot} · ${p.title}`, spec: p.tagline, desc: 'Clique para abrir o projeto.', section: 2, kind: 'ram', project: i }, [
       box(0.008, 0.31, 1.33, M.pcbGreen, [x, y0 + 0.155, L.dimmZ], undefined, 0.002),
@@ -303,7 +304,7 @@ export function buildBoard({ profile, projects }, pcbTexture, S) {
       keep(box(0.03, 0.035, 1.27, light, [x, y0 + 0.36, L.dimmZ], undefined, 0.008)),
       box(0.032, 0.012, 1.3, M.sinkLight, [x, y0 + 0.337, L.dimmZ], undefined, 0.003),
     ], [x, y0, L.dimmZ]);
-    install(stick, [0.25 + i * 0.12, 1.25 + i * 0.12, 0.2], [0.3, 0.5 - i * 0.2, 0.4], S(2, 0.05 + i * 0.16, 0.35 + i * 0.16));
+    install(stick, [0, 0.55 + i * 0.05, 0], [0, 0.18 - i * 0.09, 0.14 - i * 0.04], S(2, 0.05 + i * 0.16, 0.35 + i * 0.16));
     // Equal-brightness glow whatever the project colour: bloom keys off luminance, so darker hues
     // (pink, purple, blue) need a higher intensity than cyan or green to light up at all.
     const lum = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
@@ -389,7 +390,7 @@ export function buildBoard({ profile, projects }, pcbTexture, S) {
     gpuParts.push(fan);
   }
   const gpu = part({ name: 'Placa de vídeo', spec: 'SKILLS RX 9000', desc: 'Clique para ver habilidades e ferramentas.', section: 3, kind: 'gpu' }, gpuParts, [gcx, 0.03, gz]);
-  install(gpu, [0.95, 0.6, 0.8], [0.55, -0.35, 0.15], S(3, 0.1, 0.7));
+  install(gpu, [0, 0.55, 0], [0.16, 0, 0.05], S(3, 0.1, 0.7));
 
   /* ---------------- M.2 SSD + heatsink ---------------- */
   const { m2 } = L;
@@ -418,7 +419,7 @@ export function buildBoard({ profile, projects }, pcbTexture, S) {
     box(0.16, 0.012, 0.16, M.ic, [m2.x + 0.16, 0.045, m2.z]),
     keep(mesh(new THREE.BoxGeometry(0.6, 0.002, 0.18), ssdLabel, [m2.x + 0.04, 0.053, m2.z])),
   ], [m2.x, 0.035, m2.z]);
-  install(ssd, [-0.3, 0.9, 0.2], [0, 0.5, 0.6], S(4, 0.05, 0.5));
+  install(ssd, [0, 0.45, 0], [0, 0.25, 0.12], S(4, 0.05, 0.5));
   const coverTex = canvasTex(1024, 300, (g, w, h) => {
     g.fillStyle = '#2b2f36';
     g.fillRect(0, 0, w, h);
@@ -438,7 +439,7 @@ export function buildBoard({ profile, projects }, pcbTexture, S) {
     box(0.78, 0.008, 0.2, M.pad, [m2.x, 0.05, m2.z]),
     ...[-0.4, 0.4].map((dx) => cyl(0.012, 0.012, M.steel, [m2.x + dx, 0.093, m2.z], 'y', 12)),
   ], [m2.x, 0.07, m2.z]);
-  install(cover, [0.2, 1.3, 0.3], [0.4, -0.4, 0.3], S(4, 0.45, 0.9));
+  install(cover, [0, 0.75, 0], [0.12, -0.2, 0.08], S(4, 0.45, 0.9));
 
   /* ---------------- Chipset ---------------- */
   const chipTex = canvasTex(1024, 840, (g, w, h) => {
@@ -525,14 +526,14 @@ export function buildBoard({ profile, projects }, pcbTexture, S) {
     keep(box(0.012, 0.012, 1.08, M.rgb, [-1.2, 0.3, -0.6], undefined, 0.004)),
     box(0.04, 0.29, 0.04, M.sinkLight, [-1.215, 0.145, -0.04]),
   ], [-1.35, 0.15, -0.6]);
-  install(shroud, [0.35, 0.5, -0.45], [0, 0, 0.6], S(5, 0.05, 0.55));
+  install(shroud, [0, 0.5, 0], [0, 0, 0.18], S(5, 0.05, 0.55));
 
   const antenna = part({ name: 'Antena Wi-Fi 7', spec: '2 × 2 MIMO · 5,8 Gbps', desc: 'Conectividade sem fio.', section: 5, kind: 'io' }, [
     box(0.22, 0.04, 0.16, M.plastic, [-1.9, 0.02, -1.04], undefined, 0.02),
     ...[-0.06, 0.06].map((dz) => cyl(0.014, 0.5, M.plastic, [-1.9, 0.27, -1.04 + dz], 'y', 12)),
     cyl(0.004, 0.32, M.gold, [-1.75, 0.03, -1.04], 'x', 8),
   ], [-1.9, 0.02, -1.04]);
-  install(antenna, [-0.4, 0.8, 0.5], [0.4, 0.8, 0], S(5, 0.3, 0.8));
+  install(antenna, [0, 0.5, 0], [0.2, 0.5, 0], S(5, 0.3, 0.8));
 
   /* ---------------- Connectors & headers ---------------- */
   const atx = [box(0.12, 0.13, 0.53, M.plastic, [L.atx.x, 0.065, L.atx.z], undefined, 0.006)];
