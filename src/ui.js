@@ -38,7 +38,7 @@ export function renderPanels({ onProjectHover, onProject }) {
     .map(
       (p, i) => `
     <button class="proj" data-project="${i}" style="--c:${p.color}">
-      <span class="thumb"><img src="${esc(cover(p))}" alt="" loading="lazy" /></span>
+      <span class="thumb"><img src="${esc(cover(p))}" alt="" width="1600" height="1000" loading="lazy" decoding="async" /></span>
       <span class="slot mono">${esc(p.slot)} · ${esc(p.year)}</span>
       <strong>${esc(p.title)}</strong>
       <span class="tag">${esc(p.tagline)}</span>
@@ -124,6 +124,32 @@ export function renderPanels({ onProjectHover, onProject }) {
 export function createModal({ onOpen, onClose }) {
   const dlg = $('#project');
   let current = -1;
+  // Safari < 15.4 (and other old engines) have no <dialog>: emulate it with a class + backdrop.
+  const native = typeof dlg.showModal === 'function' && !(import.meta.env.DEV && /[?&]nodialog\b/.test(location.search));
+  const backdrop = native ? null : document.body.appendChild(Object.assign(document.createElement('div'), { className: 'dialog-backdrop' }));
+  if (!native) {
+    document.documentElement.classList.add('no-dialog');
+    dlg.setAttribute('role', 'dialog');
+    dlg.setAttribute('aria-modal', 'true');
+    backdrop.addEventListener('click', () => close());
+    addEventListener('keydown', (e) => e.key === 'Escape' && isOpen() && close());
+  }
+  const isOpen = () => dlg.hasAttribute('open');
+  let lastFocus = null;
+  function show() {
+    if (native) return dlg.showModal();
+    lastFocus = document.activeElement;
+    dlg.setAttribute('open', '');
+    document.body.classList.add('modal-open');
+    $('.m-close', dlg).focus();
+  }
+  function hide() {
+    if (native) return dlg.close();
+    dlg.removeAttribute('open');
+    document.body.classList.remove('modal-open');
+    lastFocus && lastFocus.focus && lastFocus.focus();
+    dlg.dispatchEvent(new Event('close'));
+  }
 
   function fill(i) {
     const p = projects[i];
@@ -148,15 +174,15 @@ export function createModal({ onOpen, onClose }) {
   function open(i) {
     current = (i + projects.length) % projects.length;
     fill(current);
-    if (!dlg.open) dlg.showModal();
+    if (!isOpen()) show();
     onOpen(current);
   }
   function close() {
-    if (!dlg.open) return;
+    if (!isOpen()) return;
     dlg.classList.add('closing');
     setTimeout(() => {
       dlg.classList.remove('closing');
-      dlg.close();
+      hide();
     }, 220);
   }
   dlg.addEventListener('close', () => {
