@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Configuração — Portfólio X1</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="bar">
+      <a class="brand" href="/"><span class="chip"></span> PORTFOLIO <em>X1</em> <span class="crumb">/ config</span></a>
+      <div class="bar-right">
+        <span id="status" class="status mono" data-state="idle">Carregando…</span>
+        <button id="undo" class="ghost" type="button" title="Volta ao conteúdo de quando você abriu esta página">Desfazer sessão</button>
+        <button id="download" class="ghost" type="button">Baixar JSON</button>
+        <button id="toggle-preview" class="ghost" type="button" aria-pressed="true">Preview</button>
+        <a class="btn" href="/" target="_blank" rel="noopener">Abrir site ↗</a>
+      </div>
+    </header>
+
+    <div class="layout">
+      <nav class="tabs" role="tablist" aria-label="Seções">
+        <button role="tab" data-tab="profile" aria-selected="true"><b>01</b> Perfil<small>CPU</small></button>
+        <button role="tab" data-tab="projects"><b>02</b> Projetos<small>RAM</small></button>
+        <button role="tab" data-tab="skills"><b>03</b> Habilidades<small>GPU</small></button>
+        <button role="tab" data-tab="experience"><b>04</b> Experiência<small>SSD</small></button>
+        <p class="tabs-note">Tudo é salvo sozinho e o site recarrega na hora — aqui ao lado e em qualquer aba aberta.</p>
+      </nav>
+
+      <main id="form" class="form" aria-live="polite"></main>
+
+      <section class="preview" id="preview">
+        <div class="preview-bar mono">
+          <span><i class="dot"></i> Ao vivo</span>
+          <button id="reload" type="button" class="link">Recarregar</button>
+        </div>
+        <iframe id="frame" src="/" title="Preview do site"></iframe>
+      </section>
+    </div>
+
+    <div id="toast" role="status"></div>
+    <script type="module" src="/src/config/main.js"></script>
+  </body>
+</html>

@@ -22,8 +22,21 @@ pnpm build     # gera dist/
 
 ## Personalizando
 
-- **Seus dados:** edite `src/data.js` (perfil, projetos, habilidades, experiência). O nome também é gravado no processador 3D e na tela de BIOS.
-- **Imagens dos projetos:** troque os arquivos em `public/projects/` (qualquer imagem 16:10 funciona; ajuste o caminho em `image`).
+### Pelo editor: `/config`
+
+Com o servidor rodando (`pnpm dev` ou o link de preview), acesse **`/config`** — por exemplo `http://localhost:5173/config`.
+
+- Abas **Perfil** (CPU), **Projetos** (RAM), **Habilidades** (GPU) e **Experiência** (SSD).
+- Tudo é salvo sozinho em `content/site.json`, e qualquer aba aberta do site recarrega na hora. O editor tem o site ao vivo ao lado, que acompanha a seção ou o projeto que você está editando.
+- Imagens dos projetos: botão **Enviar imagem**, arrastar e soltar, ou colar uma URL. Os envios vão para `public/uploads/`.
+- Até 4 projetos (um por slot de memória da placa). Dá para reordenar, adicionar e remover.
+- **Baixar JSON** exporta o conteúdo; **Desfazer sessão** volta ao estado de quando a página foi aberta.
+
+O editor só existe no servidor de desenvolvimento: o `pnpm build` gera apenas o site, com o conteúdo de `content/site.json` embutido. Quem tiver o link do preview também consegue abrir o `/config`.
+
+### Direto no arquivo
+
+Edite `content/site.json`. Os campos são validados por `src/content.js` (links só `http(s)`, `mailto` e `tel`; cores em `#rrggbb`).
 
 ## Estrutura
 
@@ -31,7 +44,11 @@ pnpm build     # gera dist/
 - `src/board/board.js` — todos os componentes 3D e as animações de encaixe.
 - `src/main.js` — cena, câmera por seção, interação (hover/clique) e loop.
 - `src/ui.js` — painéis, janela de projeto, tela de BIOS e efeito de texto.
+- `content/site.json` — o conteúdo; `src/content.js` valida e `src/data.js` carrega.
+- `config.html`, `src/config/` — o editor `/config`; `config-api.js` — API de salvar/enviar imagens (só em `pnpm dev`).
+
+Projetos, empresas e números de exemplo em `content/site.json` são fictícios.
 
 ## Créditos
 
-HDRI “Studio Small 09” por Sergej Majboroda, [Poly Haven](https://polyhaven.com/a/studio_small_09) (CC0). Projetos, empresas e números em `src/data.js` são exemplos fictícios.
+HDRI “Studio Small 09” por Sergej Majboroda, [Poly Haven](https://polyhaven.com/a/studio_small_09) (CC0).

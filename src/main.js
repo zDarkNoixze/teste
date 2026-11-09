@@ -238,6 +238,25 @@ const modal = createModal({
 });
 renderPanels({ onProjectHover: (i) => (hoverProject = i), onProject: (i) => modal.open(i) });
 
+/* ---------------- /config live preview bridge ---------------- */
+// When embedded in the editor, follow what is being edited (section or project).
+if (window.self !== window.top) {
+  document.body.classList.add('embedded');
+  addEventListener('message', (e) => {
+    if (e.origin !== location.origin || !e.data || typeof e.data !== 'object') return;
+    const { type, section, project } = e.data;
+    if (type !== 'x1:focus') return;
+    if (Number.isInteger(section) && sections[section]) {
+      scrollTo(0, sections[section].offsetTop);
+      readScroll();
+      progress = targetProgress;
+    }
+    if (Number.isInteger(project) && project >= 0 && project < projects.length) modal.open(project);
+    else modal.close();
+  });
+  window.parent.postMessage({ type: 'x1:ready' }, location.origin);
+}
+
 /* ---------------- Picking ---------------- */
 const mouse = new THREE.Vector2(0, 0);
 const mouseSmooth = new THREE.Vector2(0, 0);

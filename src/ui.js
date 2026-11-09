@@ -1,8 +1,15 @@
-import { profile, projects, skills, experience } from './data.js';
+import { profile, projects, skills, experience, asset } from './data.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ext = (url) => (url && url !== '#' ? ' target="_blank" rel="noopener"' : '');
+
+/** Project image, or a generated cover in the project colour when none is set. */
+function cover(p) {
+  if (p.image) return asset(p.image);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000"><defs><radialGradient id="g" cx=".3" cy=".3" r="1"><stop offset="0" stop-color="${p.color}" stop-opacity=".55"/><stop offset="1" stop-color="#05060a"/></radialGradient></defs><rect width="1600" height="1000" fill="url(#g)"/><text x="120" y="560" fill="#fff" font-family="sans-serif" font-size="120" font-weight="700">${esc(p.title)}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
 
 /* ------------------------------------------------------------------ */
 /* Panels                                                              */
@@ -31,7 +38,7 @@ export function renderPanels({ onProjectHover, onProject }) {
     .map(
       (p, i) => `
     <button class="proj" data-project="${i}" style="--c:${p.color}">
-      <span class="thumb"><img src="${import.meta.env.BASE_URL}${p.image}" alt="" loading="lazy" /></span>
+      <span class="thumb"><img src="${esc(cover(p))}" alt="" loading="lazy" /></span>
       <span class="slot mono">${esc(p.slot)} · ${esc(p.year)}</span>
       <strong>${esc(p.title)}</strong>
       <span class="tag">${esc(p.tagline)}</span>
@@ -121,7 +128,7 @@ export function createModal({ onOpen, onClose }) {
   function fill(i) {
     const p = projects[i];
     dlg.style.setProperty('--c', p.color);
-    $('.m-img img', dlg).src = `${import.meta.env.BASE_URL}${p.image}`;
+    $('.m-img img', dlg).src = cover(p);
     $('.m-img img', dlg).alt = `Tela do projeto ${p.title}`;
     $('.m-slot', dlg).textContent = `${p.slot} · ${p.year} · ${p.role}`;
     $('.m-title', dlg).textContent = p.title;
@@ -194,6 +201,13 @@ export async function runBoot(progress) {
   const log = $('#boot-log');
   const bar = $('#boot-bar');
   let skip = false;
+  // Only the first visit of a session plays the full POST; reloads (e.g. after /config edits) skip it.
+  try {
+    skip = !!sessionStorage.getItem('x1-booted') || window.self !== window.top;
+    sessionStorage.setItem('x1-booted', '1');
+  } catch {
+    /* storage unavailable */
+  }
   const skipNow = () => (skip = true);
   addEventListener('keydown', skipNow, { once: true });
   el.addEventListener('pointerdown', skipNow, { once: true });
