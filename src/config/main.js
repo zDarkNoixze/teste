@@ -171,7 +171,7 @@ const views = {
                 <label class="btn small file">Enviar imagem<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" data-upload="projects.${i}.image" hidden /></label>
                 ${p.image ? `<button type="button" class="ghost small" data-action="clear-image" data-index="${i}">Remover</button>` : ''}
                 ${field('…ou URL / caminho da imagem', `projects.${i}.image`, { placeholder: 'https://… ou projects/minha-imagem.png' })}
-                <small class="muted">PNG, JPG, WEBP, GIF ou AVIF até 8 MB · proporção ideal 16:10</small>
+                <small class="muted">PNG, JPG, WEBP, GIF ou AVIF · fotos grandes são reduzidas para 1920 px automaticamente · proporção ideal 16:10</small>
               </div>
             </div>
             ${row(field('Título', `projects.${i}.title`), field('Ano', `projects.${i}.year`))}
@@ -326,9 +326,45 @@ function refreshThumb(card, value) {
   const thumb = $('.thumb', card);
   thumb.innerHTML = value ? `<img src="${esc(imgUrl(value))}" alt="" />` : '<span>Sem imagem<br /><small>Arraste uma imagem aqui</small></span>';
 }
+/**
+ * Shrinks big photos before upload: max 1920 px wide, JPEG 85% (or PNG when it keeps
+ * transparency). GIFs pass through untouched to keep animation.
+ */
+async function optimise(file) {
+  if (file.type === 'image/gif' || !('createImageBitmap' in window)) return file;
+  let bmp;
+  try {
+    bmp = await createImageBitmap(file);
+  } catch {
+    return file;
+  }
+  const scale = Math.min(1, 1920 / bmp.width);
+  if (scale === 1 && file.size < 450_000) return file;
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * scale);
+  c.height = Math.round(bmp.height * scale);
+  const g = c.getContext('2d');
+  g.drawImage(bmp, 0, 0, c.width, c.height);
+  bmp.close?.();
+  // Keep alpha only if the source can have it and actually uses it.
+  let alpha = false;
+  if (file.type !== 'image/jpeg') {
+    const px = g.getImageData(0, 0, c.width, c.height).data;
+    for (let i = 3; i < px.length; i += 16) if (px[i] < 250) { alpha = true; break; }
+  }
+  const type = alpha ? 'image/png' : 'image/jpeg'; // no WebP: iOS < 14 cannot show it
+  const blob = await new Promise((r) => c.toBlob(r, type, 0.85));
+  if (!blob || blob.size >= file.size) return file;
+  return new File([blob], file.name.replace(/\.\w+$/, alpha ? '.png' : '.jpg'), { type: blob.type });
+}
+
 async function upload(file, path) {
   if (!file) return;
-  if (file.size > 8_000_000) return toast('Imagem maior que 8 MB');
+  if (file.size > 25_000_000) return toast('Imagem maior que 25 MB');
+  status('saving', 'Otimizando imagem…');
+  const before = file.size;
+  file = await optimise(file);
+  if (file.size > 8_000_000) return status('error', 'Imagem grande demais mesmo depois de otimizar');
   status('saving', 'Enviando imagem…');
   try {
     const r = await fetch(`/api/upload?name=${encodeURIComponent(file.name)}`, { method: 'POST', headers: { 'Content-Type': file.type }, body: file });
@@ -337,7 +373,8 @@ async function upload(file, path) {
     setPath(state, path, j.path);
     render();
     await save();
-    toast('Imagem enviada ✓');
+    const kb = (n) => `${Math.round(n / 1024)} KB`;
+    toast(file.size < before ? `Imagem enviada ✓ ${kb(before)} → ${kb(file.size)}` : 'Imagem enviada ✓');
   } catch (e) {
     status('error', `Falha no envio: ${e.message}`);
   }
@@ -362,6 +399,34 @@ form.addEventListener('drop', (e) => {
 });
 
 /* ---------------- Header buttons ---------------- */
+// Re-renders the images shown to devices without 3D, from the live preview (so they match edits).
+let posterWait = null;
+addEventListener('message', (e) => {
+  if (e.origin === location.origin && e.data?.type === 'x1:poster' && posterWait) posterWait(e.data);
+});
+$('#posters').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  status('saving', 'Gerando imagens da versão leve…');
+  try {
+    await save();
+    const data = await new Promise((resolve, reject) => {
+      posterWait = resolve;
+      frame.contentWindow.postMessage({ type: 'x1:poster' }, location.origin);
+      setTimeout(() => reject(new Error('o preview não respondeu')), 90_000);
+    });
+    if (!data.ok) throw new Error(data.error || 'falha ao renderizar');
+    const r = await fetch('/api/poster', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `Erro ${r.status}`);
+    status('saved', 'Imagens da versão leve atualizadas');
+    toast('Versão leve atualizada ✓');
+  } catch (err) {
+    status('error', `Não gerou: ${err.message}`);
+  } finally {
+    posterWait = null;
+    btn.disabled = false;
+  }
+});
 $('#download').addEventListener('click', () => {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(cleaned(), null, 2)], { type: 'application/json' }));
