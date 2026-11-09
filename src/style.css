@@ -76,7 +76,7 @@ button { font: inherit; color: inherit; }
 #rail button.active::after { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px var(--accent); }
 
 .hud {
-  position: fixed; left: clamp(20px, 4vw, 48px); bottom: 24px; z-index: 10; display: flex; gap: 26px; align-items: flex-end;
+  position: fixed; left: clamp(20px, 4vw, 48px); bottom: 24px; z-index: 4; display: flex; gap: 26px; align-items: flex-end;
   font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); pointer-events: none;
 }
 .hud small { display: block; font-size: 10px; margin-bottom: 4px; }
