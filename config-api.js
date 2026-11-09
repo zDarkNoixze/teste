@@ -8,6 +8,7 @@ import { sanitize } from './src/content.js';
  *   GET  /api/config   → current content/site.json
  *   PUT  /api/config   → sanitize + save; Vite then reloads every open tab of the site
  *   POST /api/upload   → saves an image into public/uploads/
+ *   POST /api/poster   → saves the pre-rendered images used by the lightweight (static) mode
  */
 
 const IMAGE_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif', 'image/avif': 'avif' };
@@ -65,6 +66,22 @@ export function configApi() {
               return send(res, 200, { ok: true, savedAt: new Date().toISOString() });
             }
             return send(res, 405, { error: 'Método não permitido' });
+          }
+
+          if (url.pathname === '/api/poster') {
+            if (req.method !== 'POST') return send(res, 405, { error: 'Método não permitido' });
+            const body = JSON.parse((await readBody(req, 12_000_000)).toString('utf8'));
+            const jpeg = (s) => {
+              const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(s || '');
+              if (!m) throw Object.assign(new Error('Imagem inválida'), { status: 400 });
+              return Buffer.from(m[1], 'base64');
+            };
+            const pt = (v) => (Array.isArray(v) && v.length === 2 && v.every((n) => Number.isFinite(n) && n > -1 && n < 2) ? v : [0.5, 0.5]);
+            const map = Object.fromEntries(['cpu', 'ram', 'gpu', 'ssd', 'io'].map((k) => [k, pt(body.map?.[k])]));
+            await writeFile(path.join(root, 'public/poster-hero.jpg'), jpeg(body.hero));
+            await writeFile(path.join(root, 'public/poster-board.jpg'), jpeg(body.board));
+            await writeFile(path.join(root, 'public/poster.json'), `${JSON.stringify(map)}\n`);
+            return send(res, 200, { ok: true });
           }
 
           if (url.pathname === '/api/upload') {
