@@ -110,12 +110,14 @@ export function routeTraces() {
 /* PCB texture                                                         */
 /* ------------------------------------------------------------------ */
 
-export function makePCBTexture(traces, renderer) {
+export function makePCBTexture(traces, renderer, scale = 1) {
+  // Drawn in 4096-px logical units; `scale` sets the stored resolution per quality tier.
   const W = 4096, H = Math.round((4096 * BOARD.h) / BOARD.w);
   const c = document.createElement('canvas');
-  c.width = W;
-  c.height = H;
+  c.width = Math.round(W * scale);
+  c.height = Math.round(H * scale);
   const g = c.getContext('2d');
+  g.scale(c.width / W, c.height / H);
   const px = (x) => ((x + BOARD.w / 2) / BOARD.w) * W;
   const pz = (z) => ((z + BOARD.h / 2) / BOARD.h) * H;
   const S = W / BOARD.w;
