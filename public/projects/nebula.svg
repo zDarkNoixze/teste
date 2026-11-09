@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000">
+  <defs>
+    <radialGradient id="bg" cx=".55" cy=".45" r=".8">
+      <stop offset="0" stop-color="#2a1a5e"/>
+      <stop offset=".55" stop-color="#110b2a"/>
+      <stop offset="1" stop-color="#07060f"/>
+    </radialGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ddd6fe"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="left" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#3b1a8a"/>
+    </linearGradient>
+    <linearGradient id="right" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5b21b6"/>
+      <stop offset="1" stop-color="#1e0f4d"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="14"/></filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+  <g fill="#fff">
+    <circle cx="120" cy="140" r="2"/><circle cx="380" cy="90" r="1.5"/><circle cx="1480" cy="180" r="2"/><circle cx="1300" cy="80" r="1.5"/><circle cx="220" cy="760" r="1.5"/><circle cx="1500" cy="820" r="2"/><circle cx="900" cy="60" r="1.5"/><circle cx="60" cy="520" r="1.5"/>
+  </g>
+  <!-- grid floor -->
+  <g stroke="#7c3aed" stroke-opacity=".35" stroke-width="1.5">
+    <path d="M300 900 L1300 900 M360 860 L1240 860 M420 825 L1180 825 M470 795 L1130 795"/>
+    <path d="M800 780 L800 900 M700 780 L620 900 M900 780 L980 900 M600 780 L440 900 M1000 780 L1160 900"/>
+  </g>
+  <ellipse cx="800" cy="760" rx="300" ry="60" fill="#8b5cf6" opacity=".35" filter="url(#glow)"/>
+  <!-- object: exploded cube -->
+  <g transform="translate(800 470)">
+    <g transform="translate(0 -60)">
+      <path d="M0 -150 L170 -60 L0 30 L-170 -60 Z" fill="url(#top)"/>
+      <path d="M-170 -60 L0 30 L0 230 L-170 140 Z" fill="url(#left)"/>
+      <path d="M170 -60 L0 30 L0 230 L170 140 Z" fill="url(#right)"/>
+      <path d="M0 -150 L170 -60 L0 30 L-170 -60 Z M0 30 L0 230" fill="none" stroke="#ede9fe" stroke-width="2.5" opacity=".8"/>
+    </g>
+    <g transform="translate(-300 -170)" opacity=".9">
+      <path d="M0 -50 L60 -20 L0 10 L-60 -20 Z" fill="#c4b5fd"/>
+      <path d="M-60 -20 L0 10 L0 80 L-60 50 Z" fill="#6d28d9"/>
+      <path d="M60 -20 L0 10 L0 80 L60 50 Z" fill="#4c1d95"/>
+    </g>
+    <g transform="translate(310 -120)" opacity=".9">
+      <path d="M0 -40 L50 -15 L0 10 L-50 -15 Z" fill="#c4b5fd"/>
+      <path d="M-50 -15 L0 10 L0 65 L-50 40 Z" fill="#6d28d9"/>
+      <path d="M50 -15 L0 10 L0 65 L50 40 Z" fill="#4c1d95"/>
+    </g>
+    <circle cx="0" cy="-60" r="230" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="6 10" opacity=".6"/>
+    <circle cx="-226" cy="-20" r="7" fill="#f0abfc"/>
+  </g>
+  <!-- UI -->
+  <g font-family="sans-serif">
+    <text x="100" y="140" fill="#ede9fe" font-size="30" font-weight="800" letter-spacing="4">NEBULA·3D</text>
+    <rect x="100" y="230" width="330" height="420" rx="22" fill="#140d33" fill-opacity=".85" stroke="#3b2a7a"/>
+    <text x="130" y="282" fill="#a78bfa" font-size="17" letter-spacing="3">MATERIAL</text>
+    <circle cx="150" cy="330" r="24" fill="#c4b5fd" stroke="#fff" stroke-width="3"/><circle cx="214" cy="330" r="24" fill="#f0abfc"/><circle cx="278" cy="330" r="24" fill="#94a3b8"/><circle cx="342" cy="330" r="24" fill="#fbbf24"/>
+    <text x="130" y="410" fill="#a78bfa" font-size="17" letter-spacing="3">ACABAMENTO</text>
+    <rect x="130" y="430" width="270" height="48" rx="12" fill="#2a1a5e"/><text x="152" y="461" fill="#ede9fe" font-size="18">Metal escovado</text>
+    <rect x="130" y="490" width="270" height="48" rx="12" fill="none" stroke="#3b2a7a"/><text x="152" y="521" fill="#8b80b8" font-size="18">Tecido técnico</text>
+    <rect x="130" y="574" width="270" height="52" rx="26" fill="#8b5cf6"/><text x="265" y="607" fill="#fff" font-size="18" font-weight="700" text-anchor="middle">Ver em AR</text>
+    <rect x="1170" y="740" width="330" height="120" rx="22" fill="#140d33" fill-opacity=".85" stroke="#3b2a7a"/>
+    <text x="1200" y="788" fill="#8b80b8" font-size="17">Configuração</text>
+    <text x="1200" y="830" fill="#ede9fe" font-size="30" font-weight="700">R$ 4.890</text>
+  </g>
+</svg>

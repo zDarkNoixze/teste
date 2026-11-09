@@ -3,167 +3,152 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>458 Spider — Anatomia de uma máquina</title>
-    <meta name="description" content="Role a página e desmonte uma Ferrari 458 Spider em 3D, peça por peça." />
+    <title>Portfólio X1 — placa-mãe interativa</title>
+    <meta name="description" content="Portfólio em forma de placa-mãe 3D: processador com informações pessoais, memórias com projetos, GPU com habilidades e SSD com experiência." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
   </head>
   <body>
     <canvas id="scene" aria-hidden="true"></canvas>
+    <div id="glow" aria-hidden="true"></div>
 
-    <div id="loader">
-      <div class="loader-ring"></div>
-      <p>Ligando o motor…</p>
+    <div id="boot" role="status" aria-live="polite">
+      <div class="boot-inner mono">
+        <div id="boot-log"></div>
+        <div class="boot-progress"><div id="boot-bar"></div></div>
+        <p class="boot-hint">Pressione qualquer tecla para pular</p>
+      </div>
     </div>
 
     <header class="topbar">
-      <div class="brand"><span class="logo">◢</span> ANATOMIA <em>458</em></div>
-      <div class="top-right">
-        <div class="meta mono"><span id="stage-name">Início</span> · <span id="counter">00 / 08</span></div>
-        <button id="sound" class="mono" aria-pressed="false" aria-label="Alternar som">
-          <i class="bars"><b></b><b></b><b></b><b></b></i><span>Som desligado</span>
-        </button>
+      <a class="brand" href="#top"><span class="chip"></span> PORTFOLIO <em>X1</em></a>
+      <div class="meta mono">
+        <span class="post">POST</span> <span id="qcode">--</span> · <span id="stage-name">Início</span>
       </div>
     </header>
     <div class="progress"><div id="bar"></div></div>
-    <nav id="rail" aria-label="Capítulos"></nav>
+    <nav id="rail" aria-label="Seções"></nav>
 
     <div class="hud mono">
-      <div><small>Peças soltas</small><b><span id="loose-parts">0</span>/<span id="total-parts">0</span></b></div>
-      <div class="hint">Passe o mouse sobre as peças</div>
+      <div><small>Componentes instalados</small><b><span id="installed">0</span>/5</b></div>
+      <div class="hint">Passe o mouse e clique nas peças</div>
     </div>
 
-    <div id="tip"><span class="cat"></span><strong></strong><span class="info"></span></div>
+    <div id="tip" role="tooltip"><span class="cat"></span><strong></strong><span class="info"></span></div>
+    <aside id="inspector" class="mono" aria-live="polite" hidden>
+      <button class="x" aria-label="Fechar">×</button>
+      <small>INSPETOR</small>
+      <strong></strong>
+      <b></b>
+      <p></p>
+    </aside>
 
-    <main>
+    <main id="top">
       <section class="panel hero left" data-stage="Início">
         <div class="card">
-          <p class="eyebrow mono">Ferrari 458 Spider · Anatomia interativa</p>
-          <h1>Desmonte<br /><span class="grad">a lenda.</span></h1>
-          <p class="lead">
-            V8 de 570 cv a 9.000 rpm e <span id="hero-count">0</span> peças — do virabrequim ao último fio do chicote.
-            Ligue o motor, aumente o som e role a página: quanto mais rápido você rolar, mais alto ele gira.
-          </p>
-          <button id="ignite" class="mono"><span class="dot"></span>Ligar o motor</button>
-          <div class="paint">
-            <div class="swatches">
-              <button class="swatch active" data-color="#a30d14" data-name="Rosso Corsa" aria-label="Rosso Corsa"></button>
-              <button class="swatch" data-color="#e8b400" data-name="Giallo Modena" aria-label="Giallo Modena"></button>
-              <button class="swatch" data-color="#1b3a8c" data-name="Blu Tour de France" aria-label="Blu Tour de France"></button>
-              <button class="swatch" data-color="#0d0e10" data-name="Nero Daytona" aria-label="Nero Daytona"></button>
-              <button class="swatch" data-color="#e6e6e3" data-name="Bianco Avus" aria-label="Bianco Avus"></button>
-            </div>
-            <span class="mono" id="paint-name">Rosso Corsa</span>
+          <p class="eyebrow mono"><span class="led"></span> Sistema pronto · Portfólio</p>
+          <h1><span class="hi">Olá, eu sou</span><br /><span id="hero-name" class="grad">—</span></h1>
+          <p class="role mono" id="hero-role"></p>
+          <p class="lead" id="hero-bio"></p>
+          <div class="ctas">
+            <a class="btn primary" href="#ram">Ver projetos</a>
+            <a class="btn" href="#io">Entrar em contato</a>
           </div>
         </div>
-        <div class="scroll-cue mono"><span></span>Role para desmontar</div>
+        <div class="scroll-cue mono"><span></span>Role para montar a placa</div>
       </section>
 
-      <section class="panel right" data-stage="Capôs">
-        <div class="card">
-          <span class="num mono">01</span>
-          <h2>Capô &amp; tampa do motor</h2>
-          <p>O capô dianteiro sai primeiro e leva junto o revestimento do porta-malas, revelando bateria, fusíveis e ABS. A tampa traseira protege o V8 montado no centro do carro.</p>
-          <ul class="specs mono">
-            <li><b>42 / 58</b>distribuição de peso</li>
-            <li><b>360 kg</b>downforce a 200 km/h</li>
-          </ul>
+      <section class="panel right" id="cpu" data-stage="Processador">
+        <div class="card wide">
+          <span class="num mono">01 · CPU</span>
+          <h2 class="scr">Processador</h2>
+          <p class="sub"><b id="cpu-name"></b> — <span id="cpu-role"></span></p>
+          <p id="cpu-bio"></p>
+          <ul id="cpu-contact" class="kv"></ul>
+          <button class="expand mono" data-expand="#cpu-specs-wrap" data-label="Ver ficha técnica" aria-expanded="false"><span>Ver ficha técnica</span> ▾</button>
+          <div id="cpu-specs-wrap" class="collapsible"><ul id="cpu-specs" class="kv specsheet"></ul></div>
+          <div id="cpu-links" class="links"></div>
         </div>
       </section>
 
-      <section class="panel left" data-stage="Portas">
-        <div class="card">
-          <span class="num mono">02</span>
-          <h2>Portas</h2>
-          <p>Cada porta se abre pela dobradiça e se desmonta no ar: painel externo em alumínio, forro interno em couro, retrovisor e o alto-falante de 165 mm escondido lá dentro.</p>
-          <ul class="specs mono">
-            <li><b>4 peças</b>por porta</li>
-            <li><b>165 mm</b>woofer de porta</li>
-          </ul>
+      <section class="panel left" id="ram" data-stage="Memória">
+        <div class="card xwide">
+          <span class="num mono">02 · RAM</span>
+          <h2 class="scr">Memória — projetos</h2>
+          <p>Cada pente de memória guarda um projeto. Clique em um card ou direto no pente para abrir.</p>
+          <div id="ram-grid" class="ram-grid"></div>
         </div>
       </section>
 
-      <section class="panel right" data-stage="Carroceria">
-        <div class="card">
-          <span class="num mono">03</span>
-          <h2>Carroceria</h2>
-          <p>Para-brisa, limpadores, para-lamas, painéis laterais, para-choques, faróis e lanternas se afastam e deixam à mostra o chassi spaceframe de alumínio.</p>
-          <ul class="specs mono">
-            <li><b>1.430 kg</b>peso a seco</li>
-            <li><b>Pininfarina</b>design</li>
-          </ul>
+      <section class="panel right" id="gpu" data-stage="Placa de vídeo">
+        <div class="card wide">
+          <span class="num mono">03 · GPU</span>
+          <h2 class="scr">Placa de vídeo — habilidades</h2>
+          <p>O que eu uso para renderizar ideias — em “% de uso”.</p>
+          <div id="gpu-skills" class="skills"></div>
         </div>
       </section>
 
-      <section class="panel left" data-stage="Rodas">
-        <div class="card">
-          <span class="num mono">04</span>
-          <h2>Rodas, freios &amp; suspensão</h2>
-          <p>Rodas forjadas soltam o pneu, a pinça (com as pastilhas) e o disco carbono-cerâmico. Depois saem manga de eixo, bandejas, amortecedores, barras estabilizadoras, caixa de direção, servofreio, ABS e as linhas de freio.</p>
-          <ul class="specs mono">
-            <li><b>398 mm</b>discos dianteiros</li>
-            <li><b>32,5 m</b>de 100 a 0 km/h</li>
-          </ul>
+      <section class="panel left" id="ssd" data-stage="Armazenamento">
+        <div class="card wide">
+          <span class="num mono">04 · SSD</span>
+          <h2 class="scr">Armazenamento — experiência</h2>
+          <ol id="ssd-list" class="timeline"></ol>
         </div>
       </section>
 
-      <section class="panel right" data-stage="Motor">
-        <div class="card">
-          <span class="num mono">05</span>
-          <h2>V8 4.5 aspirado</h2>
-          <p>Primeiro o lado da admissão: caixas de ar, borboletas, plenum, bobinas, chicotes, injetores e velas. Depois tampas, comandos e cabeçotes — até o bloco abrir e mostrar pistões, bielas e o virabrequim plano. O ronco some à medida que o motor é desmontado.</p>
-          <ul class="specs mono">
-            <li><b>570 cv</b>a 9.000 rpm</li>
-            <li><b>3,4 s</b>de 0 a 100 km/h</li>
-          </ul>
-        </div>
-      </section>
-
-      <section class="panel left" data-stage="Interior">
-        <div class="card">
-          <span class="num mono">06</span>
-          <h2>Interior</h2>
-          <p>Painel, quadro de instrumentos, volante e borboletas, encostos e assentos separados, trilhos, cintos de 3 pontos, pedaleira, tapetes, ar-condicionado com seus dutos, airbag e o carpete do assoalho.</p>
-          <ul class="specs mono">
-            <li><b>2</b>lugares</li>
-            <li><b>F1-Trac</b>controle de tração</li>
-          </ul>
-        </div>
-      </section>
-
-      <section class="panel right" data-stage="Elétrica">
-        <div class="card">
-          <span class="num mono">07</span>
-          <h2>Elétrica &amp; áudio</h2>
-          <p>Os chicotes sobem fio a fio, cada um com sua cor, fita isolante e conectores. Bateria, fusíveis e relés, centrais do motor, BCM, buzinas — e o sistema de som: tweeters, alto-falante central, subwoofer, amplificador e todo o cabeamento.</p>
-          <ul class="specs mono">
-            <li><b>2 ECUs</b>uma por banco</li>
-            <li><b>6 falantes</b>+ amplificador</li>
-          </ul>
-        </div>
-      </section>
-
-      <section class="panel final left" data-stage="Explodida">
-        <div class="card">
-          <span class="num mono">08</span>
-          <h2>Vista explodida</h2>
-          <p><b id="final-count">0</b> peças, nenhuma sobrando — por último saem tanque, escape, tubulação de arrefecimento e subchassis. Passe o mouse para identificar cada uma.</p>
-          <ul id="inventory" class="inventory mono"></ul>
-          <button id="reassemble" class="mono">Remontar ↑</button>
+      <section class="panel right final" id="io" data-stage="Conexões">
+        <div class="card wide">
+          <span class="num mono">05 · I/O</span>
+          <h2 class="scr">Conexões — vamos conversar?</h2>
+          <p>Placa montada e ligada. Agora falta só você se conectar.</p>
+          <a id="io-email" class="big-mail"></a>
+          <form id="io-form" class="form">
+            <label><span class="mono">Seu nome</span><input name="name" required autocomplete="name" /></label>
+            <label><span class="mono">Mensagem</span><textarea name="message" rows="3" required></textarea></label>
+            <button class="btn primary" type="submit">Enviar mensagem →</button>
+          </form>
+          <div id="io-links" class="ports"></div>
         </div>
       </section>
     </main>
 
     <footer class="credits mono">
-      Modelo 3D “Ferrari 458 Italia” por
-      <a href="https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6" target="_blank" rel="noopener">vicent091036</a>
-      (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>), dividido em peças e com
-      mecânica adicionada · HDRI “Studio Small 09” por Sergej Majboroda (CC0, Poly Haven) · Projeto não oficial, sem vínculo com a Ferrari S.p.A.
+      © <span id="year"></span> <span id="foot-name"></span> · Portfólio X1 · feito com Three.js · HDRI “Studio Small 09” por Sergej Majboroda (CC0, Poly Haven)
     </footer>
+
+    <dialog id="project" aria-labelledby="m-title">
+      <div class="m-wrap">
+        <div class="m-img"><img alt="" /></div>
+        <div class="m-body">
+          <div class="m-top">
+            <span class="m-slot mono"></span>
+            <button class="m-close" aria-label="Fechar">×</button>
+          </div>
+          <h2 class="m-title" id="m-title"></h2>
+          <p class="m-tagline"></p>
+          <ul class="m-metrics"></ul>
+          <p class="m-desc"></p>
+          <h3 class="mono">Tópicos</h3>
+          <ul class="m-topics"></ul>
+          <h3 class="mono">Stack</h3>
+          <div class="m-stack chips"></div>
+          <div class="m-actions">
+            <a class="btn primary m-demo" target="_blank" rel="noopener">Ver ao vivo ↗</a>
+            <a class="btn m-code" target="_blank" rel="noopener">Código ↗</a>
+          </div>
+          <div class="m-nav mono">
+            <button class="m-prev">← Anterior</button>
+            <span class="m-count"></span>
+            <button class="m-next">Próximo →</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
 
     <script type="module" src="/src/main.js"></script>
   </body>

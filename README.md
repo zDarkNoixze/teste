@@ -1,6 +1,16 @@
-# Anatomia 458 — Ferrari 458 Spider em 3D
+# Portfólio X1 — placa-mãe 3D interativa
 
-Site interativo em Three.js: uma Ferrari 458 Spider aparece no início e, conforme você rola a página, a câmera orbita e o carro é desmontado peça por peça — cerca de 150 peças, do virabrequim ao último fio — até a vista explodida final. Tem som sintetizado em tempo real.
+Portfólio em Three.js no formato de uma placa-mãe. A página abre com uma tela de BIOS (POST) e mostra a placa com os componentes flutuando. Conforme você rola, cada peça se encaixa no lugar e a seção correspondente aparece:
+
+| Seção | Componente | Conteúdo |
+| --- | --- | --- |
+| 01 | Processador | Informações pessoais (nome, e-mail com botão de copiar, local, status, ficha técnica expansível, links) |
+| 02 | Memória RAM | 4 projetos, um por pente: imagem, descrição, tópicos, stack, métricas e links em uma janela própria |
+| 03 | Placa de vídeo | Habilidades (barras de “% de uso”) |
+| 04 | SSD M.2 | Experiência e formação (linha do tempo) |
+| 05 | Painel de I/O | Contato (e-mail, formulário via `mailto`, redes) |
+
+Também dá para passar o mouse sobre qualquer peça para ver o nome e a especificação, e clicar nela: componentes principais levam à seção correspondente, pentes de RAM abrem o projeto e as demais peças abrem o “inspetor”.
 
 ## Rodando
 
@@ -10,23 +20,18 @@ pnpm dev       # http://localhost:5173
 pnpm build     # gera dist/
 ```
 
+## Personalizando
+
+- **Seus dados:** edite `src/data.js` (perfil, projetos, habilidades, experiência). O nome também é gravado no processador 3D e na tela de BIOS.
+- **Imagens dos projetos:** troque os arquivos em `public/projects/` (qualquer imagem 16:10 funciona; ajuste o caminho em `image`).
+
 ## Estrutura
 
-| Arquivo | O que faz |
-| --- | --- |
-| `src/car/model.js` | Divide as malhas do `ferrari.glb` em componentes conectados e os reagrupa por posição (`classify`) em peças reais: portas (casca, forro, retrovisor), bancos (encosto e assento), faróis, carpete, cluster… |
-| `src/car/mechanics.js` | Mecânica modelada em código: suspensão por roda, direção, freios, V8 completo (pistões, bielas, virabrequim, comandos, bobinas, velas, injetores, admissão, acessórios), câmbio, arrefecimento, escape, combustível, subchassis. |
-| `src/car/interior.js` | Pedaleira, tapetes, cintos, trilhos, ar-condicionado e dutos, airbag, borboletas. |
-| `src/car/electrics.js` | Bateria, fusíveis e relés, ECUs, BCM, buzinas, chicotes fio a fio e o sistema de som (falantes, sub, amplificador, cabos). |
-| `src/car/kit.js` | Utilitários de modelagem: chicotes trançados, cintos, alto-falantes, foles e o *batching* que funde as malhas de cada peça por material. |
-| `src/car/timeline.js` | Capítulos (`S(capítulo, a, b)`), animação de desmontagem e materiais. |
-| `src/audio.js` | Som 100% sintetizado (Web Audio): V8 flat-plane cujo giro acompanha a velocidade do scroll, estalos no corte, sons por tipo de peça ao soltar/encaixar, vento e partida. |
-| `src/main.js` | Cena, luz HDRI, câmera orbital por capítulo, hover com BVH, HUD e controles. |
-
-Cada peça é criada com `P(nome, categoria, pivô, movimentos, filhos, { info, count })`. Um movimento é `{ r: S(cap, início, fim), o: [dx, dy, dz], rot: [rx, ry, rz] }`; vários movimentos se somam (ex.: o alto-falante da porta acompanha a porta e depois se solta dela).
+- `src/board/pcb.js` — layout da placa, roteamento das trilhas, textura da PCB e os pulsos de dados animados (shader).
+- `src/board/board.js` — todos os componentes 3D e as animações de encaixe.
+- `src/main.js` — cena, câmera por seção, interação (hover/clique) e loop.
+- `src/ui.js` — painéis, janela de projeto, tela de BIOS e efeito de texto.
 
 ## Créditos
 
-- Modelo “Ferrari 458 Italia” por [vicent091036](https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6), licença [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), distribuído com os exemplos do three.js. Alterado: dividido em peças, materiais ajustados e mecânica, elétrica e áudio adicionados.
-- HDRI “Studio Small 09” por Sergej Majboroda, [Poly Haven](https://polyhaven.com/a/studio_small_09) (CC0).
-- Projeto não oficial, sem vínculo com a Ferrari S.p.A. “Ferrari” e “458” são marcas de seus respectivos donos.
+HDRI “Studio Small 09” por Sergej Majboroda, [Poly Haven](https://polyhaven.com/a/studio_small_09) (CC0). Projetos, empresas e números em `src/data.js` são exemplos fictícios.

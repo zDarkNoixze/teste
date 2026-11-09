@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c0b16"/>
+      <stop offset="1" stop-color="#120a12"/>
+    </linearGradient>
+    <linearGradient id="m1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f9a8d4"/>
+      <stop offset="1" stop-color="#be185d"/>
+    </linearGradient>
+    <linearGradient id="m2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e7d8c9"/>
+      <stop offset="1" stop-color="#a68a6d"/>
+    </linearGradient>
+    <linearGradient id="m3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f3f46"/>
+      <stop offset="1" stop-color="#18181b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+  <rect x="90" y="70" width="1420" height="860" rx="22" fill="#faf7f2"/>
+  <!-- nav -->
+  <g font-family="serif">
+    <text x="150" y="146" fill="#1c1917" font-size="40" font-style="italic" font-weight="700">Atelier</text>
+  </g>
+  <g font-family="sans-serif" font-size="17" fill="#57534e" letter-spacing="2">
+    <text x="560" y="140">NOVIDADES</text><text x="720" y="140">COLEÇÕES</text><text x="880" y="140">LOOKS</text><text x="1000" y="140">SOBRE</text>
+  </g>
+  <circle cx="1380" cy="132" r="22" fill="none" stroke="#1c1917" stroke-width="2.5"/>
+  <rect x="1410" y="106" width="34" height="22" rx="11" fill="#db2777"/>
+  <text x="1427" y="123" fill="#fff" font-family="sans-serif" font-size="14" font-weight="700" text-anchor="middle">3</text>
+  <!-- hero -->
+  <rect x="150" y="200" width="620" height="660" rx="18" fill="url(#m1)"/>
+  <path d="M460 300 C390 300 360 360 360 400 L300 470 L330 520 L370 490 L370 800 L550 800 L550 490 L590 520 L620 470 L560 400 C560 360 530 300 460 300 Z" fill="#fdf2f8" opacity=".92"/>
+  <path d="M420 300 C440 340 480 340 500 300" fill="none" stroke="#be185d" stroke-width="5"/>
+  <g font-family="serif" fill="#fff">
+    <text x="190" y="290" font-size="22" letter-spacing="5" font-family="sans-serif">PRIMAVERA · 26</text>
+  </g>
+  <text x="840" y="290" fill="#1c1917" font-family="serif" font-size="74" font-weight="700">Leveza que</text>
+  <text x="840" y="370" fill="#1c1917" font-family="serif" font-size="74" font-weight="700" font-style="italic">veste bem.</text>
+  <text x="840" y="430" fill="#78716c" font-family="sans-serif" font-size="22">Peças autorais em linho e algodão orgânico.</text>
+  <rect x="840" y="470" width="230" height="64" rx="32" fill="#1c1917"/>
+  <text x="955" y="510" fill="#fff" font-family="sans-serif" font-size="19" font-weight="600" text-anchor="middle">Montar meu look</text>
+  <!-- products -->
+  <g font-family="sans-serif">
+    <rect x="840" y="580" width="200" height="200" rx="14" fill="url(#m2)"/>
+    <path d="M900 620 L980 620 L1000 680 L985 760 L895 760 L880 680 Z" fill="#f5efe6"/>
+    <text x="840" y="812" fill="#1c1917" font-size="18" font-weight="600">Camisa Linho</text>
+    <text x="840" y="840" fill="#78716c" font-size="17">R$ 289</text>
+    <rect x="1060" y="580" width="200" height="200" rx="14" fill="url(#m3)"/>
+    <path d="M1120 610 L1200 610 L1215 760 L1170 760 L1160 670 L1150 760 L1105 760 Z" fill="#52525b"/>
+    <text x="1060" y="812" fill="#1c1917" font-size="18" font-weight="600">Calça Alfaiataria</text>
+    <text x="1060" y="840" fill="#78716c" font-size="17">R$ 349</text>
+    <rect x="1280" y="580" width="180" height="200" rx="14" fill="#fce7f3"/>
+    <circle cx="1370" cy="670" r="56" fill="#f9a8d4"/>
+    <path d="M1340 650 Q1370 610 1400 650" fill="none" stroke="#9d174d" stroke-width="5"/>
+    <text x="1280" y="812" fill="#1c1917" font-size="18" font-weight="600">Bolsa Arco</text>
+    <text x="1280" y="840" fill="#78716c" font-size="17">R$ 419</text>
+  </g>
+  <!-- look total -->
+  <rect x="1100" y="420" width="360" height="120" rx="18" fill="#ffffff" stroke="#e7e5e4" stroke-width="2"/>
+  <text x="1124" y="462" fill="#78716c" font-family="sans-serif" font-size="16">Seu look · 3 peças</text>
+  <text x="1124" y="510" fill="#1c1917" font-family="sans-serif" font-size="34" font-weight="700">R$ 1.057</text>
+  <rect x="1330" y="472" width="110" height="44" rx="22" fill="#db2777"/>
+  <text x="1385" y="501" fill="#fff" font-family="sans-serif" font-size="16" font-weight="700" text-anchor="middle">Pix -5%</text>
+</svg>

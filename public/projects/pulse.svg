@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#06202a"/>
+      <stop offset="1" stop-color="#0a0f1c"/>
+    </linearGradient>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="area2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#818cf8" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#818cf8" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+  <circle cx="1350" cy="120" r="380" fill="#22d3ee" opacity=".08"/>
+  <!-- window -->
+  <rect x="110" y="90" width="1380" height="820" rx="26" fill="#0d1726" stroke="#1d2b40" stroke-width="2"/>
+  <rect x="110" y="90" width="1380" height="64" rx="26" fill="#111d30"/>
+  <rect x="110" y="128" width="1380" height="26" fill="#111d30"/>
+  <circle cx="150" cy="122" r="9" fill="#ff5f57"/><circle cx="180" cy="122" r="9" fill="#febc2e"/><circle cx="210" cy="122" r="9" fill="#28c840"/>
+  <rect x="560" y="108" width="480" height="28" rx="14" fill="#0a1322"/>
+  <text x="800" y="128" fill="#5d7391" font-family="monospace" font-size="16" text-anchor="middle">app.pulseanalytics.io</text>
+  <!-- sidebar -->
+  <rect x="110" y="154" width="220" height="756" fill="#0b1422"/>
+  <g font-family="sans-serif" font-size="18" fill="#6b819e">
+    <rect x="132" y="186" width="34" height="34" rx="9" fill="#22d3ee"/>
+    <text x="178" y="210" fill="#e6f6fb" font-weight="700" font-size="21">Pulse</text>
+    <rect x="128" y="258" width="184" height="40" rx="10" fill="#13304a"/>
+    <text x="150" y="284" fill="#7ee8fa">● Visão geral</text>
+    <text x="150" y="338">○ Eventos</text>
+    <text x="150" y="386">○ Funis</text>
+    <text x="150" y="434">○ Retenção</text>
+    <text x="150" y="482">○ Alertas</text>
+  </g>
+  <!-- kpis -->
+  <g font-family="sans-serif">
+    <rect x="360" y="186" width="250" height="130" rx="16" fill="#101c2e"/>
+    <text x="384" y="226" fill="#6b819e" font-size="16">Eventos / min</text>
+    <text x="384" y="282" fill="#e6f6fb" font-size="44" font-weight="700">1,24M</text>
+    <text x="540" y="282" fill="#4ade80" font-size="16">▲12%</text>
+    <rect x="630" y="186" width="250" height="130" rx="16" fill="#101c2e"/>
+    <text x="654" y="226" fill="#6b819e" font-size="16">Usuários ativos</text>
+    <text x="654" y="282" fill="#e6f6fb" font-size="44" font-weight="700">84,3k</text>
+    <text x="810" y="282" fill="#4ade80" font-size="16">▲4%</text>
+    <rect x="900" y="186" width="250" height="130" rx="16" fill="#101c2e"/>
+    <text x="924" y="226" fill="#6b819e" font-size="16">Latência p95</text>
+    <text x="924" y="282" fill="#e6f6fb" font-size="44" font-weight="700">42ms</text>
+    <text x="1080" y="282" fill="#f87171" font-size="16">▼3%</text>
+    <rect x="1170" y="186" width="290" height="130" rx="16" fill="#101c2e"/>
+    <text x="1194" y="226" fill="#6b819e" font-size="16">Status</text>
+    <circle cx="1206" cy="270" r="9" fill="#4ade80"/>
+    <text x="1226" y="278" fill="#e6f6fb" font-size="26" font-weight="600">Operacional</text>
+  </g>
+  <!-- main chart -->
+  <rect x="360" y="340" width="790" height="400" rx="18" fill="#101c2e"/>
+  <text x="388" y="382" fill="#e6f6fb" font-family="sans-serif" font-size="20" font-weight="600">Tráfego em tempo real</text>
+  <g stroke="#1b2a40" stroke-width="1.5">
+    <line x1="388" y1="460" x2="1122" y2="460"/><line x1="388" y1="540" x2="1122" y2="540"/><line x1="388" y1="620" x2="1122" y2="620"/><line x1="388" y1="700" x2="1122" y2="700"/>
+  </g>
+  <path d="M388 640 C450 600 490 650 550 590 S650 520 710 560 S820 430 880 470 S990 420 1040 380 S1100 400 1122 360 L1122 710 L388 710 Z" fill="url(#area)"/>
+  <path d="M388 640 C450 600 490 650 550 590 S650 520 710 560 S820 430 880 470 S990 420 1040 380 S1100 400 1122 360" fill="none" stroke="#22d3ee" stroke-width="5" filter="url(#glow)" opacity=".7"/>
+  <path d="M388 640 C450 600 490 650 550 590 S650 520 710 560 S820 430 880 470 S990 420 1040 380 S1100 400 1122 360" fill="none" stroke="#7ee8fa" stroke-width="3.5"/>
+  <path d="M388 680 C460 660 520 690 590 650 S700 640 760 610 S860 620 920 580 S1040 590 1122 540 L1122 710 L388 710 Z" fill="url(#area2)"/>
+  <path d="M388 680 C460 660 520 690 590 650 S700 640 760 610 S860 620 920 580 S1040 590 1122 540" fill="none" stroke="#818cf8" stroke-width="3"/>
+  <circle cx="1040" cy="380" r="9" fill="#0d1726" stroke="#7ee8fa" stroke-width="4"/>
+  <rect x="960" y="300" width="160" height="56" rx="10" fill="#1a2f4a"/>
+  <text x="980" y="334" fill="#e6f6fb" font-family="monospace" font-size="18">22:41 · 1,3M</text>
+  <!-- donut -->
+  <rect x="1170" y="340" width="290" height="400" rx="18" fill="#101c2e"/>
+  <text x="1196" y="382" fill="#e6f6fb" font-family="sans-serif" font-size="20" font-weight="600">Origem</text>
+  <g transform="translate(1315 530)" fill="none" stroke-width="34">
+    <circle r="92" stroke="#1b2a40"/>
+    <circle r="92" stroke="#22d3ee" stroke-dasharray="260 600" transform="rotate(-90)"/>
+    <circle r="92" stroke="#818cf8" stroke-dasharray="150 600" stroke-dashoffset="-268" transform="rotate(-90)"/>
+    <circle r="92" stroke="#f472b6" stroke-dasharray="100 600" stroke-dashoffset="-426" transform="rotate(-90)"/>
+  </g>
+  <text x="1315" y="540" fill="#e6f6fb" font-family="sans-serif" font-size="34" font-weight="700" text-anchor="middle">46%</text>
+  <g font-family="sans-serif" font-size="15" fill="#8aa0bc">
+    <circle cx="1200" cy="684" r="7" fill="#22d3ee"/><text x="1214" y="689">Web</text>
+    <circle cx="1280" cy="684" r="7" fill="#818cf8"/><text x="1294" y="689">iOS</text>
+    <circle cx="1350" cy="684" r="7" fill="#f472b6"/><text x="1364" y="689">Android</text>
+  </g>
+  <!-- bars -->
+  <rect x="360" y="764" width="1100" height="120" rx="18" fill="#101c2e"/>
+  <g fill="#22d3ee">
+    <rect x="392" y="830" width="22" height="34" rx="4" opacity=".5"/><rect x="424" y="812" width="22" height="52" rx="4" opacity=".6"/><rect x="456" y="796" width="22" height="68" rx="4"/><rect x="488" y="820" width="22" height="44" rx="4" opacity=".6"/><rect x="520" y="790" width="22" height="74" rx="4"/><rect x="552" y="806" width="22" height="58" rx="4" opacity=".7"/><rect x="584" y="784" width="22" height="80" rx="4"/>
+  </g>
+  <text x="660" y="824" fill="#e6f6fb" font-family="sans-serif" font-size="22" font-weight="600">Alertas inteligentes</text>
+  <text x="660" y="856" fill="#6b819e" font-family="sans-serif" font-size="17">Anomalias detectadas automaticamente em 3 regiões</text>
+</svg>
