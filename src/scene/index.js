@@ -48,7 +48,7 @@ export async function startScene(app, tier, { govern = true } = {}) {
   let govScale = 1;
   const dprFor = () => {
     const budget = Math.sqrt(Q.maxPixels / (innerWidth * innerHeight));
-    return Math.max(0.5, Math.min(devicePixelRatio || 1, Q.dprMax, budget) * govScale);
+    return Math.max(0.4, Math.min(devicePixelRatio || 1, Q.dprMax, budget) * govScale);
   };
 
   const BG = 0x05060a;
@@ -448,9 +448,11 @@ export async function startScene(app, tier, { govern = true } = {}) {
       } else if (renderer.shadowMap.enabled) {
         renderer.shadowMap.enabled = false;
         step = 'sem sombras';
-      } else if (fps < 20) {
-        gov.log.push(`${Math.round(fps)} fps → modo leve`);
-        return app.fallback('slow');
+      } else if (govScale > 0.4 + 1e-3) {
+        // Last resort stays in 3D: keep trading resolution for frame rate.
+        govScale = Math.max(0.4, govScale - 0.1);
+        resize();
+        step = `resolução ${Math.round(govScale * 100)}%`;
       }
       if (step) gov.log.push(`${Math.round(fps)} fps → ${step}`);
       gov.warmUntil = now + 1500;

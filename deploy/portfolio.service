@@ -1,0 +1,31 @@
+# /etc/systemd/system/portfolio.service
+#   sudo useradd --system --no-create-home --shell /usr/sbin/nologin portfolio
+#   sudo mkdir -p /opt/portfolio && sudo cp -r server.mjs dist /opt/portfolio/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now portfolio
+# Put nginx/Caddy in front for HTTPS, or bind port 80 directly (see AmbientCapabilities).
+[Unit]
+Description=Portfolio static site
+After=network.target
+
+[Service]
+Type=simple
+User=portfolio
+Group=portfolio
+WorkingDirectory=/opt/portfolio
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=8080
+Environment=ROOT=/opt/portfolio/dist
+#Environment=BASE_PATH=/portfolio
+ExecStart=/usr/bin/node /opt/portfolio/server.mjs
+Restart=always
+RestartSec=3
+# Direct port 80: set HOST=0.0.0.0 PORT=80 and uncomment:
+#AmbientCapabilities=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
