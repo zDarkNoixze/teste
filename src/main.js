@@ -5,7 +5,7 @@
  */
 import { projects } from './data.js';
 import { renderPanels, createModal, runBoot, scramble } from './ui.js';
-import { detectTier, saveCap, clearCap } from './quality.js';
+import { detectTier } from './quality.js';
 import './style.css';
 
 const $ = (s) => document.querySelector(s);
@@ -125,18 +125,17 @@ addEventListener('pointermove', (e) => {
   p.ny = -(e.clientY / innerHeight) * 2 + 1;
   p.inside = true;
   p.moved = true;
-  p.overUI = !!(e.target.closest && e.target.closest('.card, .topbar, #rail, dialog, #inspector, .credits, .hud button'));
+  p.overUI = !!(e.target.closest && e.target.closest('.card, .topbar, #rail, dialog, #inspector, .credits'));
   if (!isTouch) glowEl.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
 }, { passive: true });
 document.addEventListener('pointerleave', () => (app.pointer.inside = false));
 
 /* ---------------- HUD ---------------- */
-const counterEl = $('#installed');
 const barEl = $('#bar');
 const stageEl = $('#stage-name');
 const qEl = $('#qcode');
-let hudIdx = -1, hudCode = '', hudCount = -1;
-app.hud = ({ installed, code }) => {
+let hudIdx = -1, hudCode = '';
+app.hud = ({ code }) => {
   const idx = Math.round(app.progress * SECTIONS);
   if (idx !== hudIdx) {
     hudIdx = idx;
@@ -144,7 +143,6 @@ app.hud = ({ installed, code }) => {
     stageEl.textContent = STAGES[idx];
   }
   if (code !== hudCode) qEl.textContent = hudCode = code;
-  if (installed !== hudCount) counterEl.textContent = hudCount = installed;
   barEl.style.transform = `scaleX(${app.progress})`;
   return idx;
 };
@@ -235,7 +233,6 @@ function enterStatic() {
   });
   drawPoster();
   wake();
-  updateModeButton();
 }
 addEventListener('resize', () => {
   layoutPoster();
@@ -249,9 +246,9 @@ const detected = detectTier();
 let tier = detected.tier;
 let scene = null;
 let loading = null;
-const LITE_KEY = 'x1-lite';
+// The old manual "modo leve" switch is gone; forget a choice saved by it.
 try {
-  if (localStorage.getItem(LITE_KEY) === '1' && !detected.forced) tier = 'static';
+  localStorage.removeItem('x1-lite');
 } catch {
   /* ignore */
 }
@@ -272,13 +269,23 @@ app.ready = () => {
   bootDone.then(() => finishBoot && finishBoot());
 };
 
-/** Called by the scene when the device cannot keep up or the GPU context is lost. */
-app.fallback = (reason) => {
-  const msg = { slow: 'Seu aparelho estava sofrendo com o 3D — ativei o modo leve.', lost: 'O 3D foi interrompido pelo navegador — ativei o modo leve.' }[reason];
-  if (reason === 'slow') saveCap('static');
+/**
+ * Called by the scene when the browser drops the WebGL context: rebuild the 3D one tier lower.
+ * Only if that keeps failing does the page fall back to the pre-rendered images.
+ */
+let restarts = 0;
+app.fallback = () => {
   stopScene();
+  if (restarts++ < 2) {
+    tier = tier === 'high' ? 'medium' : 'low';
+    // A lost context stays lost on its canvas, so the new renderer gets a fresh one.
+    const old = $('#scene');
+    old.replaceWith(old.cloneNode(false));
+    setTimeout(() => startScene(tier), 600);
+    return;
+  }
   enterStatic();
-  if (msg) notify(msg);
+  notify('O navegador interrompeu o 3D — mostrando a versão em imagens.');
 };
 
 async function startScene(t) {
@@ -291,7 +298,6 @@ async function startScene(t) {
       scene = s;
       staticOn = false;
       if (raf) cancelAnimationFrame(raf), (raf = 0);
-      updateModeButton();
     })
     .catch((err) => {
       console.error(err);
@@ -305,31 +311,6 @@ function stopScene() {
   if (scene) scene.dispose();
   scene = null;
 }
-
-const modeBtn = $('#mode');
-function updateModeButton() {
-  const can3D = detected.webgl2;
-  modeBtn.hidden = !can3D;
-  modeBtn.textContent = scene ? 'Modo leve' : 'Ativar 3D';
-  modeBtn.setAttribute('aria-pressed', String(!scene));
-}
-modeBtn.addEventListener('click', () => {
-  try {
-    if (scene) {
-      localStorage.setItem(LITE_KEY, '1');
-      stopScene();
-      enterStatic();
-    } else {
-      localStorage.removeItem(LITE_KEY);
-      clearCap();
-      const t = tier === 'static' ? (detected.tier === 'static' ? 'low' : detected.tier) : tier;
-      tier = t;
-      startScene(t);
-    }
-  } catch {
-    /* storage unavailable */
-  }
-});
 
 if (tier === 'static') {
   enterStatic();
