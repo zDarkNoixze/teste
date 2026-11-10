@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host",
+    "start": "node server.mjs",
+    "serve:dist": "pnpm build && node server.mjs"
   },
   "dependencies": {
     "three": "0.187.0"

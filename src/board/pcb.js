@@ -193,7 +193,7 @@ export function makePCBTexture(traces, renderer, scale = 1) {
   };
   corners(L.cpu.x, L.cpu.z, 0.7, 0.74);
   g.font = '600 30px "JetBrains Mono", monospace';
-  g.fillText('CPU1 · LGA-X1', px(L.cpu.x - 0.35), pz(L.cpu.z + 0.37) + 40);
+  g.fillText('CPU1', px(L.cpu.x - 0.35), pz(L.cpu.z + 0.37) + 40);
   L.dimmX.forEach((x, i) => {
     g.font = '600 22px "JetBrains Mono", monospace';
     g.save();
@@ -227,14 +227,55 @@ export function makePCBTexture(traces, renderer, scale = 1) {
   g.strokeRect(px(L.audio.x - 0.32), pz(L.audio.z - 0.27), 0.64 * S, 0.5 * S);
   g.restore();
 
-  // Brand block
-  g.font = '700 74px "Space Grotesk", sans-serif';
-  g.fillStyle = 'rgba(232,236,242,0.9)';
-  g.fillText('PORTFOLIO X1', px(0.15), pz(0.42));
-  g.font = '500 30px "JetBrains Mono", monospace';
-  g.fillStyle = 'rgba(214,220,228,0.6)';
-  g.fillText('REV 1.0 · DESIGNED IN SÃO PAULO', px(0.15), pz(0.42) + 46);
+  // Decorative silkscreen artwork: angled bands and chamfered outlines in the open areas.
+  g.save();
+  const stripes = (x0, z0, x1, z1, gap = 0.07, w = 0.028) => {
+    g.save();
+    g.beginPath();
+    g.rect(px(x0), pz(z0), (x1 - x0) * S, (z1 - z0) * S);
+    g.clip();
+    const d = z1 - z0;
+    for (let s = x0 - d; s < x1; s += gap) {
+      g.beginPath();
+      g.moveTo(px(s), pz(z1));
+      g.lineTo(px(s + d), pz(z0));
+      g.lineTo(px(s + d + w), pz(z0));
+      g.lineTo(px(s + w), pz(z1));
+      g.closePath();
+      g.fill();
+    }
+    g.restore();
+  };
+  const outline = (pts) => {
+    g.beginPath();
+    pts.forEach(([x, z], i) => (i ? g.lineTo(px(x), pz(z)) : g.moveTo(px(x), pz(z))));
+    g.stroke();
+  };
+  g.fillStyle = 'rgba(160,168,180,0.06)';
+  stripes(0.74, -0.86, 1.28, -0.58);
+  stripes(-0.1, 0.72, 0.4, 0.86);
+  g.strokeStyle = 'rgba(190,198,210,0.22)';
+  g.lineWidth = 3;
+  outline([[0.72, -0.2], [0.72, -0.84], [0.8, -0.92], [1.08, -0.92]]);
+  outline([[1.3, -0.5], [1.3, 0.1], [1.22, 0.18], [0.9, 0.18]]);
+  outline([[-1.45, 1.02], [-1.45, 0.6], [-1.37, 0.52], [-1.2, 0.52]]);
+  // Emblem: three nested chevrons, no lettering.
+  g.fillStyle = 'rgba(232,236,242,0.55)';
+  for (let k = 0; k < 3; k++) {
+    const x = 0.02 + k * 0.09, z = 0.36, a = 0.07, t = 0.025;
+    g.beginPath();
+    g.moveTo(px(x), pz(z - a));
+    g.lineTo(px(x + t), pz(z - a));
+    g.lineTo(px(x + t + a), pz(z));
+    g.lineTo(px(x + t), pz(z + a));
+    g.lineTo(px(x), pz(z + a));
+    g.lineTo(px(x + a), pz(z));
+    g.closePath();
+    g.fill();
+  }
+  g.restore();
   g.font = '500 22px "JetBrains Mono", monospace';
+  g.fillStyle = 'rgba(214,220,228,0.6)';
   g.fillText('ATX · 30.5 × 24.4 cm · 8-LAYER PCB · 2 oz COPPER', px(-1.45), pz(1.17));
 
   // Mounting holes

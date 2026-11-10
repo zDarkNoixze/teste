@@ -5,7 +5,7 @@
  *   high   — desktop/flagship GPU: full resolution, MSAA, bloom, 2K shadows, full HDR
  *   medium — typical phone/laptop: capped resolution, half-res bloom, 1K shadows
  *   low    — weak GPU: no post-processing, no shadows, procedural lighting
- *   static — no WebGL2, software rendering, data saver: pre-rendered images + CSS motion
+ *   static — only when WebGL2 is unavailable (e.g. iOS < 15): pre-rendered images + CSS motion
  *
  * `?q=high|medium|low|static` forces a tier (and disables the runtime governor).
  */
@@ -49,7 +49,7 @@ function probeGL() {
 export function readCap() {
   try {
     const c = JSON.parse(localStorage.getItem(CAP_KEY) || 'null');
-    if (c && ORDER.includes(c.tier) && Date.now() - c.t < CAP_DAYS * 864e5) return c.tier;
+    if (c && ORDER.includes(c.tier) && c.tier !== 'static' && Date.now() - c.t < CAP_DAYS * 864e5) return c.tier;
   } catch {
     /* ignore */
   }
@@ -94,7 +94,7 @@ export function detectTier() {
   let tier = mobile ? 'medium' : 'high';
   if (SOFTWARE.test(gl.gpu)) gl.software = true;
   if (gl.software || WEAK_GPU.test(gl.gpu)) {
-    tier = gl.software ? 'static' : 'low';
+    tier = 'low';
     info.reasons.push(gl.software ? 'renderização por software' : 'GPU antiga');
   } else if (MID_GPU.test(gl.gpu)) tier = min(tier, 'medium');
   if (mem && mem <= 2) (tier = min(tier, 'low')), info.reasons.push('pouca memória');
@@ -106,7 +106,7 @@ export function detectTier() {
   // Very large screens on mid hardware: resolution scaling handles it, but start one notch lower.
   if (!mobile && px > 9e6 && cores && cores <= 4) tier = min(tier, 'medium');
   if (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || '')) {
-    tier = 'static';
+    tier = 'low';
     info.reasons.push('economia de dados');
   }
 
