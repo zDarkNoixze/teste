@@ -1,25 +1,21 @@
 {
   "profile": {
-    "name": "Cris Brown",
+    "name": "Nome Teste",
     "role": "Dev Full-stack & Creative Developer",
-    "location": "São Paulo, Brasil",
-    "email": "voce@seudominio.com",
-    "phone": "+55 11 90000-0000",
+    "location": "Natal, RN",
+    "email": "emailteste@gmail.com",
+    "phone": "+55 84912345678",
     "site": "seudominio.com",
     "availability": "Disponível para novos projetos",
     "bio": "Construo produtos digitais que unem engenharia sólida e interfaces memoráveis — de dashboards em tempo real a experiências 3D no navegador.",
     "links": [
       {
         "label": "GitHub",
-        "url": "https://github.com/seu-usuario"
+        "url": "https://github.com/teste"
       },
       {
         "label": "LinkedIn",
-        "url": "https://www.linkedin.com/in/seu-usuario"
-      },
-      {
-        "label": "Dribbble",
-        "url": "https://dribbble.com/seu-usuario"
+        "url": "https://www.linkedin.com/in/teste"
       }
     ],
     "specs": [

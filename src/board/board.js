@@ -67,6 +67,21 @@ function mergePart(part) {
 }
 
 /**
+ * Extrudes a board-space outline [[x, z], …] upwards from y0 to y0 + h with a soft bevel.
+ * `holes` are [x, z, r] circles. Material groups: 0 = top/bottom faces, 1 = sides.
+ */
+function slab(pts, y0, h, mats, holes = [], bevel = 0.008) {
+  const shape = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+  for (const [cx, cz, r] of holes) shape.holes.push(new THREE.Path().absarc(cx, -cz, r, 0, Math.PI * 2, true));
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: h - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 48,
+  });
+  geo.rotateX(-Math.PI / 2);
+  geo.translate(0, y0 + bevel, 0);
+  return keep(new THREE.Mesh(geo, mats));
+}
+
+/**
  * Swept, pitched fan blades merged into one geometry (fan axis = +z). Each blade is a sickle
  * outline extruded thin, then twisted into a helix: steep at the root, flatter at the tip.
  */
@@ -149,6 +164,41 @@ export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
   ANISO = Q.aniso ?? 8;
   const SMD = Q.smd ?? 1;
   const M = materials();
+  // Brushed, machined aluminium shared by the VRM, I/O, chipset and M.2 armour (UVs are in board units).
+  const armorTex = canvasTex(1024, 1024, (g, w, h) => {
+    const grd = g.createLinearGradient(0, 0, w, h);
+    grd.addColorStop(0, '#30343b');
+    grd.addColorStop(1, '#272a30');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 3200; i++) {
+      g.fillStyle = Math.random() < 0.6 ? `rgba(255,255,255,${Math.random() * 0.035})` : `rgba(0,0,0,${Math.random() * 0.09})`;
+      const x = Math.random() * w, y = Math.random() * h, l = 40 + Math.random() * 180;
+      g.fillRect(x, y, l, 1);
+      if (x + l > w) g.fillRect(x - w, y, l, 1); // wrap so the tile repeats seamlessly
+    }
+    // 45° grooves; the period divides the tile, so the pattern tiles too.
+    for (let k = -4; k <= 4; k++) {
+      const x = k * 256;
+      g.lineWidth = 12;
+      g.strokeStyle = 'rgba(0,0,0,0.42)';
+      g.beginPath();
+      g.moveTo(x, 0);
+      g.lineTo(x + h, h);
+      g.stroke();
+      g.lineWidth = 2;
+      g.strokeStyle = 'rgba(255,255,255,0.12)';
+      g.beginPath();
+      g.moveTo(x + 8, 0);
+      g.lineTo(x + 8 + h, h);
+      g.stroke();
+    }
+  });
+  armorTex.wrapS = armorTex.wrapT = THREE.RepeatWrapping;
+  armorTex.repeat.set(1.4, 1.4);
+  M.armor = new THREE.MeshStandardMaterial({ map: armorTex, metalness: 0.85, roughness: 0.36 });
+  M.armorSide = new THREE.MeshStandardMaterial({ color: 0x1d2025, metalness: 0.9, roughness: 0.42 });
+  const ARMOR = [M.armor, M.armorSide];
   const root = new THREE.Group();
   const parts = [];
   const installs = [];
@@ -206,7 +256,7 @@ export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
     box(0.025, 0.012, 0.5, M.plastic, [cpu.x + 0.22, 0.03, cpu.z]),
     ...[[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => cyl(0.02, 0.03, M.steel, [cpu.x + sx * 0.28, 0.03, cpu.z + sz * 0.3], 'y', 12)),
   ];
-  part({ name: 'Soquete LGA-X1', spec: '1.700 contatos banhados a ouro', desc: 'O encaixe do processador. Cada pino é uma conexão elétrica.', section: 1 }, socketBase);
+  part({ name: 'Soquete do processador', spec: '1.700 contatos banhados a ouro', desc: 'O encaixe do processador. Cada pino é uma conexão elétrica.', section: 1 }, socketBase);
 
   // Load plate, hinged on its top edge, starts open.
   const hingeZ = cpu.z - 0.29;
@@ -240,10 +290,8 @@ export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
       g.fillRect(Math.random() * w, Math.random() * h, Math.random() * 120, 1);
     }
     g.fillStyle = 'rgba(40,44,52,0.85)';
-    g.font = `700 92px ${SANS}`;
-    g.fillText('X1', 90, 190);
     g.font = `600 30px ${MONO}`;
-    g.fillText('PORTFOLIO PROCESSOR', 90, 250);
+    g.fillText('PROCESSADOR', 90, 210);
     g.font = `700 ${profile.name.length > 14 ? 64 : 82}px ${SANS}`;
     g.fillText(profile.name.toUpperCase(), 90, 520);
     g.font = `500 34px ${MONO}`;
@@ -267,23 +315,23 @@ export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
   ], [cpu.x, 0.05, cpu.z]);
   install(cpuGroup, [0, 0.6, 0], [0.22, 0.35, -0.12], S(1, 0.1, 0.6));
 
-  /* ---------------- VRM, heatsinks, chokes, caps ---------------- */
-  const finSink = (x0, x1, z0, z1, h, alongX) => {
-    const out = [box(x1 - x0, h * 0.45, z1 - z0, M.sink, [(x0 + x1) / 2, h * 0.225, (z0 + z1) / 2], undefined, 0.01)];
-    const n = Math.round(((alongX ? x1 - x0 : z1 - z0) / 0.03));
-    for (let i = 0; i < n; i++) {
-      const t = (i + 0.5) / n;
-      out.push(alongX
-        ? box(0.012, h * 0.55, z1 - z0, M.sink, [x0 + (x1 - x0) * t, h * 0.72, (z0 + z1) / 2], undefined, 0.003)
-        : box(x1 - x0, h * 0.55, 0.012, M.sink, [(x0 + x1) / 2, h * 0.72, z0 + (z1 - z0) * t], undefined, 0.003));
-    }
-    out.push(box(alongX ? x1 - x0 : 0.02, 0.012, alongX ? 0.02 : z1 - z0, M.sinkLight,
-      alongX ? [(x0 + x1) / 2, h + 0.004, z1 - 0.012] : [x1 - 0.012, h + 0.004, (z0 + z1) / 2]));
-    return out;
-  };
-  part({ name: 'Dissipador do VRM superior', spec: 'Alumínio usinado · heatpipe de cobre', desc: 'Mantém frios os MOSFETs que alimentam o processador.' },
-    [...finSink(-1.08, 0.12, -1.11, -0.88, 0.3, true), cyl(0.012, 0.55, M.copper, [-1.0, 0.2, -0.88], 'z', 12)]);
-  part({ name: 'Dissipador do VRM lateral', spec: 'Alumínio usinado', desc: 'Segunda metade do sistema de alimentação.' }, finSink(-1.18, -0.98, -0.86, 0.02, 0.3, false));
+  /* ---------------- VRM armour, chokes, caps ---------------- */
+  // One L-shaped sculpted cap over two fin stacks, joined by a heatpipe.
+  const vrm = [];
+  for (let x = -1.15; x <= 0.1; x += 0.03) vrm.push(box(0.008, 0.17, 0.2, M.sink, [x, 0.105, -1.0], undefined, 0.002));
+  for (let z = -0.86; z <= -0.05; z += 0.03) vrm.push(box(0.15, 0.17, 0.008, M.sink, [-1.105, 0.105, z], undefined, 0.002));
+  vrm.push(
+    box(1.3, 0.02, 0.22, M.armorSide, [-0.52, 0.01, -1.0], undefined, 0.004),
+    box(0.17, 0.02, 0.86, M.armorSide, [-1.105, 0.01, -0.45], undefined, 0.004),
+    cyl(0.012, 1.1, M.copper, [-0.5, 0.06, -0.9], 'x', 12),
+    cyl(0.012, 0.86, M.copper, [-1.03, 0.06, -0.45], 'z', 12),
+    slab([[-1.19, -1.11], [0.06, -1.11], [0.15, -1.03], [0.15, -0.95], [0.1, -0.89], [-0.96, -0.89], [-1.02, -0.83],
+      [-1.02, -0.1], [-1.08, -0.02], [-1.19, -0.02]], 0.19, 0.075, ARMOR),
+    // raised machined spine + light-catching chamfer strips
+    slab([[-0.9, -1.07], [-0.1, -1.07], [-0.04, -1.01], [-0.1, -0.95], [-0.9, -0.95]], 0.265, 0.018, [M.sinkLight, M.armorSide], [], 0.004),
+    box(0.012, 0.012, 0.6, M.sinkLight, [-1.17, 0.265, -0.4]),
+  );
+  part({ name: 'Dissipador do VRM', spec: 'Alumínio usinado · heatpipe de cobre', desc: 'Mantém frios os MOSFETs que alimentam o processador.' }, vrm);
 
   const chokes = [];
   for (let i = 0; i < 15; i++) chokes.push(box(0.065, 0.055, 0.065, M.choke, [-0.98 + i * 0.075, 0.0275, -0.8], undefined, 0.008));
@@ -359,14 +407,19 @@ export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
   });
 
   /* ---------------- PCIe slots + GPU ---------------- */
-  const pcieSlot = (x, z, len, label) => [
+  const pcieSlot = (x, z, len, armored = false) => [
     box(len, 0.06, 0.04, M.plastic, [x, 0.03, z], undefined, 0.004),
     box(len, 0.004, 0.044, M.steel, [x, 0.062, z]),
     box(len * 0.98, 0.006, 0.014, M.hole, [x, 0.063, z]),
     box(0.06, 0.07, 0.035, M.plastic, [x + len / 2 + 0.02, 0.035, z], [0, 0, -0.3], 0.004),
+    // steel sleeve: side walls plus end caps that clamp to the board
+    ...(armored ? [
+      ...[-1, 1].map((s) => box(len + 0.02, 0.058, 0.004, M.steel, [x, 0.031, z + s * 0.022], undefined, 0.001)),
+      ...[-1, 1].map((s) => box(0.02, 0.066, 0.05, M.steel, [x + s * (len / 2 + 0.005), 0.033, z], undefined, 0.003)),
+    ] : []),
   ];
-  part({ name: 'Slot PCIe 5.0 x16', spec: '128 GB/s · blindagem de aço', desc: 'Onde entra a placa de vídeo.', section: 3 }, pcieSlot(L.pcie1.x, L.pcie1.z, 0.89));
-  part({ name: 'Slot PCIe 4.0 x16 (x4)', spec: 'Placas de expansão', desc: 'Espaço para placas de captura, rede ou outra GPU.' }, pcieSlot(L.pcie2.x, L.pcie2.z, 0.89));
+  part({ name: 'Slot PCIe 5.0 x16', spec: '128 GB/s · blindagem de aço', desc: 'Onde entra a placa de vídeo.', section: 3 }, pcieSlot(L.pcie1.x, L.pcie1.z, 0.89, true));
+  part({ name: 'Slot PCIe 4.0 x16 (x4)', spec: 'Placas de expansão', desc: 'Espaço para placas de captura, rede ou outra GPU.' }, pcieSlot(L.pcie2.x, L.pcie2.z, 0.89, true));
   part({ name: 'Slot PCIe x1', spec: 'Placas de expansão', desc: 'Para placas de som, Wi-Fi ou portas extras.' }, pcieSlot(L.pciex1.x, L.pciex1.z, 0.25));
 
   const gx0 = -1.5, gx1 = 1.12, gz = L.pcie1.z, gh = 1.02;
@@ -387,7 +440,7 @@ export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
     }
     g.fillStyle = '#e8ebf0';
     g.font = `700 120px ${SANS}`;
-    g.fillText('SKILLS RX 9000', 120, h / 2 + 20);
+    g.fillText('HABILIDADES', 120, h / 2 + 20);
     g.font = `500 44px ${MONO}`;
     g.fillStyle = 'rgba(232,235,240,0.55)';
     g.fillText('STACK · FERRAMENTAS · LINGUAGENS', 124, h / 2 + 100);
@@ -478,7 +531,7 @@ export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
     fans.push(fan);
     gpuParts.push(fan);
   }
-  const gpu = part({ name: 'Placa de vídeo', spec: 'SKILLS RX 9000', desc: 'Clique para ver habilidades e ferramentas.', section: 3, kind: 'gpu' }, gpuParts, [gcx, 0.03, gz]);
+  const gpu = part({ name: 'Placa de vídeo', spec: 'Habilidades e ferramentas', desc: 'Clique para ver habilidades e ferramentas.', section: 3, kind: 'gpu' }, gpuParts, [gcx, 0.03, gz]);
   install(gpu, [0, 0.55, 0], [0.16, 0, 0.05], S(3, 0.1, 0.7));
 
   /* ---------------- M.2 SSD + heatsink ---------------- */
@@ -617,7 +670,7 @@ export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
   ], [-1.35, 0.15, -0.6]);
   install(shroud, [0, 0.5, 0], [0, 0, 0.18], S(5, 0.05, 0.55));
 
-  const antenna = part({ name: 'Antena Wi-Fi 7', spec: '2 × 2 MIMO · 5,8 Gbps', desc: 'Conectividade sem fio.', section: 5, kind: 'io' }, [
+  const antenna = part({ name: 'Antena Wi-Fi', spec: '2 × 2 MIMO', desc: 'Conectividade sem fio.', section: 5, kind: 'io' }, [
     box(0.22, 0.04, 0.16, M.plastic, [-1.9, 0.02, -1.04], undefined, 0.02),
     ...[-0.06, 0.06].map((dz) => cyl(0.014, 0.5, M.plastic, [-1.9, 0.27, -1.04 + dz], 'y', 12)),
     cyl(0.004, 0.32, M.gold, [-1.75, 0.03, -1.04], 'x', 8),
@@ -694,7 +747,7 @@ export function buildBoard({ profile, projects }, pcbTexture, S, Q = {}) {
   });
   part({ name: 'LEDs de diagnóstico', spec: 'CPU · DRAM · VGA · BOOT', desc: 'Acendem conforme cada componente é detectado.' }, dbg);
 
-  part({ name: 'Bateria CMOS', spec: 'CR2032 · 3 V', desc: 'Mantém relógio e configurações da BIOS com a placa desligada.' }, [
+  part({ name: 'Bateria CMOS', spec: 'Bateria de lítio · 3 V', desc: 'Mantém relógio e configurações da BIOS com a placa desligada.' }, [
     cyl(0.11, 0.012, M.plastic, [L.cmos.x, 0.006, L.cmos.z], 'y', 32),
     cyl(0.1, 0.032, M.steel, [L.cmos.x, 0.028, L.cmos.z], 'y', 40),
     box(0.04, 0.03, 0.06, M.steel, [L.cmos.x + 0.11, 0.03, L.cmos.z], undefined, 0.004),

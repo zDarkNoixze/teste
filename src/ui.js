@@ -208,12 +208,12 @@ export function createModal({ onOpen, onClose }) {
 
 export function bootLines() {
   return [
-    'PORTFOLIO X1 BIOS v1.0 · Copyright (C) ' + new Date().getFullYear(),
+    'BIOS v1.0 · Copyright (C) ' + new Date().getFullYear(),
     '',
     `CPU  : ${profile.name} · ${profile.role}`,
     'CORE : 8 competências @ 6 anos de experiência',
     `MEM  : ${projects.length} × DDR5 · ${projects.map((p) => p.title).join(' · ')}`,
-    'GPU  : SKILLS RX 9000 · ' + skills.reduce((n, g) => n + g.items.length, 0) + ' ferramentas',
+    'GPU  : Habilidades · ' + skills.reduce((n, g) => n + g.items.length, 0) + ' ferramentas',
     `SSD  : NVMe · ${experience.length} setores de experiência`,
     `NET  : ${profile.email}`,
     '',
